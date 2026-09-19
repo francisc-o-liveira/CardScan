@@ -1,0 +1,29 @@
+{
+  "name": "cardscan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CardScan — Scan. Identify. Collect. TCG card recognition and collection management platform.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @cardscan/api dev",
+    "dev:web": "pnpm --filter @cardscan/web dev",
+    "dev:mobile": "pnpm --filter @cardscan/mobile start",
+    "build": "pnpm -r --filter=./packages/* run build && pnpm -r --filter=./apps/* run build",
+    "build:packages": "pnpm -r --filter=./packages/* run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "prisma:generate": "dotenv -e .env -- prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema=prisma/schema.prisma",
+    "prisma:studio": "dotenv -e .env -- prisma studio --schema=prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.19.1",
+    "dotenv-cli": "^7.4.2",
+    "prisma": "^5.19.1",
+    "typescript": "^5.5.4"
+  }
+}
