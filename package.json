@@ -18,7 +18,9 @@
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "prisma:generate": "dotenv -e .env -- prisma generate --schema=prisma/schema.prisma",
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema=prisma/schema.prisma",
-    "prisma:studio": "dotenv -e .env -- prisma studio --schema=prisma/schema.prisma"
+    "prisma:studio": "dotenv -e .env -- prisma studio --schema=prisma/schema.prisma",
+    "sync:pokemon": "pnpm --filter @cardscan/api run sync:pokemon",
+    "sync:magic": "pnpm --filter @cardscan/api run sync:magic"
   },
   "devDependencies": {
     "@prisma/client": "^5.19.1",

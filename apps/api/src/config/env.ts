@@ -13,6 +13,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+  POKEMON_API_URL: z.string().min(1).default("https://api.tcgdex.net/v2/en"),
+  MAGIC_API_URL: z.string().min(1).default("https://api.scryfall.com"),
 });
 
 const parsed = envSchema.safeParse(process.env);

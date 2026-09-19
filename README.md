@@ -8,7 +8,11 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 ## Status
 
-This is **Phase 1 — Foundation**: monorepo scaffolding, authentication (register/login/refresh/logout/forgot-password/reset-password), the full core database schema, and a navigable web + mobile shell. Card database, scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap).
+**Phase 1 — Foundation** is done: monorepo scaffolding, authentication (register/login/refresh/logout/forgot-password/reset-password), the full core database schema, and a navigable web + mobile shell.
+
+**Phase 2 — Card database** has started: the full Pokémon catalog (220 sets, ~23.7k cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. The card database search UI isn't built yet.
+
+Scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap).
 
 ## Tech stack
 
@@ -64,7 +68,11 @@ pnpm docker:up
 pnpm prisma:generate
 pnpm prisma:migrate
 
-# 5. Run the apps (in separate terminals)
+# 5. Import the card catalogs (sets + cards + images)
+pnpm sync:pokemon   # from TCGdex — ~20s
+pnpm sync:magic     # from Scryfall — downloads a ~78MB bulk file, a few minutes
+
+# 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100
 pnpm dev:web      # http://localhost:3000
 pnpm dev:mobile   # opens Expo dev tools
@@ -72,15 +80,17 @@ pnpm dev:mobile   # opens Expo dev tools
 
 ### Environment variables
 
-See [`.env.example`](.env.example) for the full list. The variables actually used in Phase 1 are `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`, and `EXPO_PUBLIC_API_URL`. Everything else is reserved for later phases (object storage, recognition providers, price providers) and isn't read by any code yet.
+See [`.env.example`](.env.example) for the full list. The variables actually used in Phase 1 are `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`, `EXPO_PUBLIC_API_URL`, `POKEMON_API_URL`, and `MAGIC_API_URL`. Everything else is reserved for later phases (object storage, price providers) and isn't read by any code yet.
 
 ### Database
 
-The Prisma schema at [`prisma/schema.prisma`](prisma/schema.prisma) defines the full data model (users, TCGs, sets, cards, collections, wishlists, scans, decks, prices) so later phases won't require destructive migrations. Only the auth/user tables are wired into the API so far.
+The Prisma schema at [`prisma/schema.prisma`](prisma/schema.prisma) defines the full data model (users, TCGs, sets, cards, collections, wishlists, scans, decks, prices) so later phases won't require destructive migrations. Auth/user tables and both card catalogs (Pokémon via TCGdex, Magic via Scryfall — see below) are wired into the API so far.
 
 ```bash
 pnpm prisma:migrate   # apply migrations locally
 pnpm prisma:studio    # browse the database
+pnpm sync:pokemon     # (re-)import the Pokémon catalog from TCGdex — see docs/database.md
+pnpm sync:magic       # (re-)import the Magic catalog from Scryfall — see docs/database.md
 ```
 
 ### Testing the auth flow end-to-end
@@ -114,13 +124,15 @@ pnpm docker:down   # stop them
 | `pnpm prisma:generate` | Regenerate the Prisma client                  |
 | `pnpm prisma:migrate`  | Run Prisma migrations locally                 |
 | `pnpm prisma:studio`   | Open Prisma Studio                            |
+| `pnpm sync:pokemon`    | Import the Pokémon catalog (sets, cards, images) from TCGdex |
+| `pnpm sync:magic`      | Import the Magic catalog (sets, cards, images) from Scryfall |
 
 ## Roadmap
 
 Built in phases — see [`docs/architecture.md`](docs/architecture.md) for details:
 
-1. **Foundation** (this pass) — monorepo, auth, DB schema, web/mobile shell
-2. **Card database** — TCG/Set/Card models, Pokémon & Magic providers, search
+1. **Foundation** — monorepo, auth, DB schema, web/mobile shell
+2. **Card database** (in progress) — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`) and Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`); card database search UI not started yet
 3. **Scanner** — camera capture, recognition pipeline, confidence scoring
 4. **Collection** — add/remove cards, quantities, conditions, statistics
 5. **Wishlist**
