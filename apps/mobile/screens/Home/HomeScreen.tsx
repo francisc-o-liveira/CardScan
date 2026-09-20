@@ -1,95 +1,165 @@
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@cardscan/config";
+import type { ComponentProps } from "react";
+import { C, R, S, T } from "@/theme";
 import { useAuth } from "@/providers/AuthProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
-import { EmptyState } from "@/components/EmptyState";
-import { getGreeting } from "@/utils/greeting";
+import { SectionHeader } from "@/components/SectionHeader";
+import { CardRail } from "@/components/CardRail";
+import { Button } from "@/components/Button";
+import { useLatestSetCards } from "@/hooks/useCatalog";
 
-const SUMMARY_TILES = [
-  { label: "Cards", value: "0" },
-  { label: "Sets", value: "0" },
-  { label: "Value", value: "€0.00" },
+interface QuickAction {
+  label: string;
+  hint: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
+  href: string;
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  { label: "Scan cards", hint: "Identify a card", icon: "scan-outline", href: "/(tabs)/scan" },
+  { label: "Search", hint: "By name or set", icon: "search-outline", href: "/(tabs)/discover" },
+  {
+    label: "Collection",
+    hint: "Everything you own",
+    icon: "layers-outline",
+    href: "/(tabs)/collection",
+  },
+  { label: "Discover", hint: "Browse sets", icon: "compass-outline", href: "/(tabs)/discover" },
 ];
 
+/**
+ * Home mirrors the web hero: one sentence on what the product does, one filled
+ * button, then real catalog content — not a dashboard of zeroes.
+ *
+ * Future / Requires Backend Support: collection totals need a /collection
+ * endpoint, so the hero stays in its empty-collection state for now.
+ */
 export function HomeScreen() {
   const { user } = useAuth();
+  const pokemon = useLatestSetCards("pokemon", 10);
+  const magic = useLatestSetCards("magic", 10);
 
   return (
     <ScreenContainer title="CardScan">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, {user?.username}
-        </Text>
-
-        <Pressable
-          style={({ pressed }) => [styles.scanCard, pressed && styles.scanCardPressed]}
-          onPress={() => router.push("/(tabs)/scan")}
-        >
-          <View>
-            <Text style={styles.scanTitle}>Scan a Card</Text>
-            <Text style={styles.scanSubtitle}>Identify a card instantly with your camera.</Text>
+      <View style={styles.heroWrap}>
+        <View style={styles.hero}>
+          <Text style={styles.greeting}>Welcome back, {user?.username}</Text>
+          <Text style={styles.heroTitle}>Your collection starts with one scan.</Text>
+          <Text style={styles.heroBody}>
+            Point your camera at a card and CardScan identifies it, then files it away.
+          </Text>
+          <View style={styles.heroActions}>
+            <Button
+              label="Scan a card"
+              icon="scan-outline"
+              variant="primary"
+              onPress={() => router.push("/(tabs)/scan")}
+            />
+            <Button
+              label="Explore cards"
+              icon="compass-outline"
+              variant="secondary"
+              onPress={() => router.push("/(tabs)/discover")}
+            />
           </View>
-          <View style={styles.scanIcon}>
-            <Ionicons name="scan-outline" size={22} color={COLORS.dark.primaryContent} />
-          </View>
-        </Pressable>
-
-        <View style={styles.tileRow}>
-          {SUMMARY_TILES.map((tile) => (
-            <View key={tile.label} style={styles.tile}>
-              <Text style={styles.tileValue}>{tile.value}</Text>
-              <Text style={styles.tileLabel}>{tile.label}</Text>
-            </View>
-          ))}
         </View>
+      </View>
 
-        <Text style={styles.sectionTitle}>Recently Scanned</Text>
-        <EmptyState
-          icon="scan-outline"
-          title="No scans yet"
-          description="Cards you scan will show up here."
+      <View style={styles.actionsGrid}>
+        {QUICK_ACTIONS.map((action) => (
+          <Pressable
+            key={action.label}
+            onPress={() => router.push(action.href as never)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}
+          >
+            <View style={styles.actionIcon}>
+              <Ionicons name={action.icon} size={18} color={C.primary} />
+            </View>
+            <Text style={styles.actionLabel}>{action.label}</Text>
+            <Text style={styles.actionHint}>{action.hint}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title="New in Pokémon" subtitle={pokemon.set?.name ?? "Latest set"} />
+        <CardRail
+          cards={pokemon.cards}
+          isLoading={pokemon.isLoading}
+          onPressCard={() => router.push("/(tabs)/discover")}
         />
-      </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title="New in Magic" subtitle={magic.set?.name ?? "Latest set"} />
+        <CardRail
+          cards={magic.cards}
+          isLoading={magic.isLoading}
+          onPressCard={() => router.push("/(tabs)/discover")}
+        />
+      </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: 24, gap: 20 },
-  greeting: { color: COLORS.dark.baseContentMuted, fontSize: 14 },
-  scanCard: {
-    backgroundColor: "rgba(91,124,250,0.12)",
+  heroWrap: { paddingHorizontal: S.xl },
+  hero: {
+    backgroundColor: C.base200,
     borderWidth: 1,
-    borderColor: "rgba(91,124,250,0.3)",
-    borderRadius: 16,
-    padding: 18,
+    borderColor: C.border,
+    borderRadius: R.xl,
+    padding: 20,
+  },
+  greeting: { color: C.baseContentMuted, fontSize: T.meta },
+  heroTitle: {
+    marginTop: 8,
+    color: C.baseContent,
+    fontSize: 24,
+    fontWeight: "700",
+    lineHeight: 30,
+    letterSpacing: -0.5,
+  },
+  heroBody: {
+    marginTop: 8,
+    color: C.baseContentMuted,
+    fontSize: T.body,
+    lineHeight: 21,
+  },
+  heroActions: { marginTop: 18, gap: 10 },
+
+  actionsGrid: {
+    marginTop: 20,
+    paddingHorizontal: S.xl,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 10,
   },
-  scanCardPressed: { opacity: 0.85 },
-  scanTitle: { color: COLORS.dark.baseContent, fontSize: 17, fontWeight: "600" },
-  scanSubtitle: { color: COLORS.dark.baseContentMuted, fontSize: 13, marginTop: 2, maxWidth: 220 },
-  scanIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.dark.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tileRow: { flexDirection: "row", gap: 12 },
-  tile: {
-    flex: 1,
-    backgroundColor: COLORS.dark.base200,
+  actionCard: {
+    // Two per row, accounting for the 10px gap.
+    width: "48%",
+    flexGrow: 1,
+    backgroundColor: C.base200,
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
-    borderRadius: 12,
+    borderColor: C.border,
+    borderRadius: R.lg,
     padding: 14,
   },
-  tileValue: { color: COLORS.dark.baseContent, fontSize: 20, fontWeight: "700" },
-  tileLabel: { color: COLORS.dark.baseContentMuted, fontSize: 12, marginTop: 2 },
-  sectionTitle: { color: COLORS.dark.baseContent, fontSize: 15, fontWeight: "600" },
+  pressed: { opacity: 0.82 },
+  actionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: R.sm + 2,
+    backgroundColor: C.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  actionLabel: { color: C.baseContent, fontSize: T.body, fontWeight: "600" },
+  actionHint: { marginTop: 2, color: C.baseContentFaint, fontSize: 12 },
+
+  section: { marginTop: 28 },
 });

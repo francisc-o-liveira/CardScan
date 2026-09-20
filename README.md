@@ -12,13 +12,16 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 2 — Card database** has started: the full Pokémon catalog (220 sets, ~23.7k cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. The card database search UI isn't built yet.
 
-Scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap).
+**Phase 2's UI has landed.** The web and mobile clients were rebuilt around a shared design system, and the catalog is now browsable and searchable end to end — Discover, Search, set detail and card detail all read live data. See [`docs/design-system.md`](docs/design-system.md) for the visual system and the per-screen specification.
+
+Scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
 
 ## Tech stack
 
 | Layer      | Stack                                                                 |
 | ---------- | ---------------------------------------------------------------------- |
 | Web        | Next.js (App Router), React, TypeScript, Tailwind CSS, DaisyUI, TanStack Query |
+| Design     | Shared tokens in `packages/config` — see [`docs/design-system.md`](docs/design-system.md) |
 | Mobile     | Expo (React Native), TypeScript, Expo Router                          |
 | API        | Node.js, Express, TypeScript, JWT auth, Zod validation                 |
 | Database   | PostgreSQL via Prisma ORM                                              |
@@ -103,7 +106,9 @@ curl -X POST http://localhost:4100/api/auth/register \
   -d '{"email":"you@example.com","username":"you","password":"Password1"}'
 ```
 
-Or just open http://localhost:3000, register an account, and you'll land on the dashboard shell.
+Or just open http://localhost:3000, register an account, and you'll land on the three welcome screens and then Home.
+
+> The auth rate limiter allows 20 requests per 15 minutes per IP across `/auth/*`, and `/auth/refresh` counts — a hard page reload spends one. That's ample in normal use but easy to trip while developing.
 
 ## Docker
 
@@ -132,7 +137,7 @@ pnpm docker:down   # stop them
 Built in phases — see [`docs/architecture.md`](docs/architecture.md) for details:
 
 1. **Foundation** — monorepo, auth, DB schema, web/mobile shell
-2. **Card database** (in progress) — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`) and Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`); card database search UI not started yet
+2. **Card database** — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`) and Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`) and a full browse/search UI on web and mobile
 3. **Scanner** — camera capture, recognition pipeline, confidence scoring
 4. **Collection** — add/remove cards, quantities, conditions, statistics
 5. **Wishlist**

@@ -1,0 +1,57 @@
+"use client";
+
+import { useState } from "react";
+import { ImageOff } from "lucide-react";
+import { cn } from "@/lib/cn";
+
+interface CardImageProps {
+  src: string | null;
+  /** Card name — also the alt text, so it must be the real name, not "card image". */
+  name: string;
+  /** `eager` for above-the-fold hero art; everything in a grid stays lazy. */
+  priority?: boolean;
+  className?: string;
+  sizes?: string;
+}
+
+/**
+ * Card artwork in a fixed 2.5:3.5 frame.
+ *
+ * Uses a plain <img> rather than next/image on purpose: the catalog is ~130k
+ * cards served from TCGdex/Scryfall CDNs at appropriate sizes already, and
+ * routing all of it through the Next optimizer would add cost and latency for
+ * no visual gain.
+ */
+export function CardImage({ src, name, priority, className, sizes }: CardImageProps) {
+  const [state, setState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
+
+  return (
+    <div className={cn("card-frame relative isolate bg-base-300", className)}>
+      {state === "loading" && <div className="skeleton-shimmer absolute inset-0" aria-hidden />}
+
+      {src && state !== "error" && (
+        <img
+          src={src}
+          alt={name}
+          sizes={sizes}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          onLoad={() => setState("loaded")}
+          onError={() => setState("error")}
+          className={cn(
+            "h-full w-full object-cover transition-opacity duration-base ease-standard",
+            state === "loaded" ? "opacity-100" : "opacity-0",
+          )}
+        />
+      )}
+
+      {state === "error" && (
+        // Named fallback: the user still learns which card this is.
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+          <ImageOff className="h-5 w-5 text-faint" aria-hidden />
+          <span className="line-clamp-3 text-[0.6875rem] leading-tight text-faint">{name}</span>
+        </div>
+      )}
+    </div>
+  );
+}

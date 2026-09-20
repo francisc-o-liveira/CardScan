@@ -1,22 +1,39 @@
+import type { ComponentProps, ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import type { ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@cardscan/config";
+import { C, R, S, T } from "@/theme";
 
 interface EmptyStateProps {
   icon: ComponentProps<typeof Ionicons>["name"];
+  /** What's missing. */
   title: string;
+  /** Why it matters and what will appear here. */
   description: string;
+  /** The one thing to do next — every empty state should offer one. */
+  action?: ReactNode;
+  secondaryAction?: ReactNode;
 }
 
-export function EmptyState({ icon, title, description }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  secondaryAction,
+}: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <View style={styles.iconBadge}>
-        <Ionicons name={icon} size={24} color={COLORS.dark.baseContentMuted} />
+        <Ionicons name={icon} size={24} color={C.baseContentMuted} />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
+      {action || secondaryAction ? (
+        <View style={styles.actions}>
+          {action}
+          {secondaryAction}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -25,26 +42,28 @@ const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: COLORS.dark.border,
-    borderRadius: 16,
-    paddingVertical: 48,
-    paddingHorizontal: 24,
+    borderColor: C.border,
+    borderRadius: R.xl,
+    paddingVertical: 44,
+    paddingHorizontal: S.xl,
     alignItems: "center",
     gap: 10,
   },
   iconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.dark.base300,
+    width: 52,
+    height: 52,
+    borderRadius: R.lg,
+    backgroundColor: C.base300,
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { color: COLORS.dark.baseContent, fontSize: 16, fontWeight: "600" },
+  title: { color: C.baseContent, fontSize: T.section, fontWeight: "600", marginTop: 4 },
   description: {
-    color: COLORS.dark.baseContentMuted,
-    fontSize: 13,
+    color: C.baseContentMuted,
+    fontSize: T.body,
+    lineHeight: 21,
     textAlign: "center",
-    maxWidth: 280,
+    maxWidth: 300,
   },
+  actions: { marginTop: 14, gap: 10, alignSelf: "stretch" },
 });

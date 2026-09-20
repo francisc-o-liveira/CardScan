@@ -2,18 +2,25 @@ import { PrismaClient } from "../apps/api/generated/prisma";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  await prisma.tcg.upsert({
-    where: { slug: "pokemon" },
-    update: {},
-    create: { slug: "pokemon", name: "Pokémon", isEnabled: true },
-  });
+const TCGS = [
+  { slug: "pokemon", name: "Pokémon" },
+  { slug: "magic", name: "Magic: The Gathering" },
+  { slug: "yugioh", name: "Yu-Gi-Oh!" },
+  { slug: "lorcana", name: "Disney Lorcana" },
+  { slug: "onepiece", name: "One Piece" },
+  { slug: "digimon", name: "Digimon" },
+  { slug: "starwars", name: "Star Wars: Unlimited" },
+  { slug: "fab", name: "Flesh and Blood" },
+];
 
-  await prisma.tcg.upsert({
-    where: { slug: "magic" },
-    update: {},
-    create: { slug: "magic", name: "Magic: The Gathering", isEnabled: true },
-  });
+async function main() {
+  for (const tcg of TCGS) {
+    await prisma.tcg.upsert({
+      where: { slug: tcg.slug },
+      update: { name: tcg.name },
+      create: { slug: tcg.slug, name: tcg.name, isEnabled: true },
+    });
+  }
 }
 
 main()

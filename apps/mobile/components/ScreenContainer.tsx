@@ -1,27 +1,71 @@
 import type { ReactNode } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "@cardscan/config";
+import { C, S, T } from "@/theme";
 
 interface ScreenContainerProps {
   title: string;
+  /** One line under the title saying what the screen is for. */
+  description?: string;
+  /** Wraps children in a ScrollView. Off for screens that own their own list. */
+  scroll?: boolean;
+  /** Rendered directly under the header, outside the scroll padding. */
+  headerAccessory?: ReactNode;
   children: ReactNode;
 }
 
-export function ScreenContainer({ title, children }: ScreenContainerProps) {
-  return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+export function ScreenContainer({
+  title,
+  description,
+  scroll = true,
+  headerAccessory,
+  children,
+}: ScreenContainerProps) {
+  const body = (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
+        {description ? <Text style={styles.description}>{description}</Text> : null}
       </View>
-      <View style={styles.content}>{children}</View>
+      {headerAccessory}
+      {children}
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      {scroll ? (
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {body}
+        </ScrollView>
+      ) : (
+        <View style={styles.flex}>{body}</View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.dark.base100 },
-  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
-  title: { fontSize: 22, fontWeight: "700", color: COLORS.dark.baseContent },
-  content: { flex: 1, paddingHorizontal: 20 },
+  safeArea: { flex: 1, backgroundColor: C.base100 },
+  flex: { flex: 1 },
+  // Bottom padding clears the tab bar.
+  scrollContent: { paddingBottom: 96 },
+  header: { paddingHorizontal: S.xl, paddingTop: S.md, paddingBottom: S.lg },
+  title: {
+    fontSize: T.title,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    color: C.baseContent,
+  },
+  description: {
+    marginTop: 6,
+    fontSize: T.body,
+    lineHeight: 21,
+    color: C.baseContentMuted,
+  },
 });

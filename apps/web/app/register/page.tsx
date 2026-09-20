@@ -5,9 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ScanLine } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { registerSchema, type RegisterInput } from "@cardscan/validation";
 import { useAuth } from "@/providers/AuthProvider";
+import { getErrorMessage } from "@/lib/api-error";
+import { AuthShell } from "@/components/layout/AuthShell";
+import { TextField } from "@/components/ui/TextField";
+import { Button } from "@/components/ui/Button";
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
@@ -23,104 +27,76 @@ export default function RegisterPage() {
     setFormError(null);
     try {
       await registerUser(values);
-      router.push("/dashboard");
+      // New accounts always see the welcome screens.
+      router.push("/welcome");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Unable to create your account");
+      setFormError(getErrorMessage(error, "We couldn't create your account. Please try again."));
     }
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-base-100 px-4 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <ScanLine className="h-6 w-6" />
+    <AuthShell
+      title="Create your account"
+      subtitle="Start tracking your collection in a couple of minutes."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form
+        method="post"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex flex-col gap-4"
+      >
+        {formError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 rounded-xl border border-error/35 bg-error/10 px-3.5 py-3 text-meta text-error"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>{formError}</span>
           </div>
-          <h1 className="text-2xl font-semibold">CardScan</h1>
-          <p className="text-sm text-base-content/60">Your TCG collection, one scan away.</p>
-        </div>
+        )}
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="card border border-base-300 bg-base-200 shadow-sm"
-          noValidate
-        >
-          <div className="card-body gap-4">
-            <h2 className="card-title text-base font-medium">Create your account</h2>
+        <TextField
+          label="Username"
+          type="text"
+          autoComplete="username"
+          placeholder="How other collectors will see you"
+          error={errors.username?.message}
+          {...register("username")}
+        />
 
-            {formError && (
-              <div role="alert" className="alert alert-error py-2 text-sm">
-                <span>{formError}</span>
-              </div>
-            )}
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          error={errors.email?.message}
+          {...register("email")}
+        />
 
-            <label className="form-control">
-              <div className="label py-1">
-                <span className="label-text">Username</span>
-              </div>
-              <input
-                type="text"
-                className="input input-bordered"
-                autoComplete="username"
-                {...register("username")}
-              />
-              {errors.username && (
-                <span className="mt-1 text-xs text-error">{errors.username.message}</span>
-              )}
-            </label>
+        <TextField
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          hint="At least 8 characters, with an uppercase letter, a lowercase letter and a number."
+          error={errors.password?.message}
+          {...register("password")}
+        />
 
-            <label className="form-control">
-              <div className="label py-1">
-                <span className="label-text">Email</span>
-              </div>
-              <input
-                type="email"
-                className="input input-bordered"
-                autoComplete="email"
-                {...register("email")}
-              />
-              {errors.email && (
-                <span className="mt-1 text-xs text-error">{errors.email.message}</span>
-              )}
-            </label>
-
-            <label className="form-control">
-              <div className="label py-1">
-                <span className="label-text">Password</span>
-              </div>
-              <input
-                type="password"
-                className="input input-bordered"
-                autoComplete="new-password"
-                {...register("password")}
-              />
-              {errors.password && (
-                <span className="mt-1 text-xs text-error">{errors.password.message}</span>
-              )}
-              <div className="label py-1">
-                <span className="label-text-alt text-base-content/50">
-                  At least 8 characters, with an uppercase letter, a lowercase letter, and a number.
-                </span>
-              </div>
-            </label>
-
-            <button type="submit" className="btn btn-primary mt-2" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <span className="loading loading-spinner loading-sm" />
-              ) : (
-                "Create account"
-              )}
-            </button>
-
-            <p className="text-center text-sm text-base-content/60">
-              Already have an account?{" "}
-              <Link href="/login" className="link link-primary">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </form>
-      </div>
-    </main>
+        <Button type="submit" variant="primary" size="lg" block isLoading={isSubmitting} className="mt-2">
+          Create account
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

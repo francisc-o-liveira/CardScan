@@ -1,4 +1,5 @@
 import type { Card } from "./card";
+import type { TcgSlug } from "./tcg";
 
 export type ScanStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -8,7 +9,7 @@ export interface CardCandidate {
 }
 
 export interface CardRecognitionResult {
-  tcg: "pokemon" | "magic";
+  tcg: TcgSlug;
   cardName?: string;
   setCode?: string;
   collectorNumber?: string;

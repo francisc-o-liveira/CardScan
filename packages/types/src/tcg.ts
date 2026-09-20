@@ -1,5 +1,13 @@
 /** Slug identifying a supported trading card game. New TCGs are added by extending this union. */
-export type TcgSlug = "pokemon" | "magic";
+export type TcgSlug =
+  | "pokemon"
+  | "magic"
+  | "yugioh"
+  | "lorcana"
+  | "onepiece"
+  | "digimon"
+  | "starwars"
+  | "fab";
 
 export interface Tcg {
   id: string;
