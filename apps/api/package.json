@@ -12,7 +12,13 @@
     "sync:magic": "tsx src/scripts/syncMagic.ts",
     "sync:yugioh": "tsx src/scripts/syncYugioh.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sync:lorcana": "tsx src/scripts/syncCatalog.ts lorcana",
+    "sync:onepiece": "tsx src/scripts/syncCatalog.ts onepiece",
+    "sync:digimon": "tsx src/scripts/syncCatalog.ts digimon",
+    "sync:starwars": "tsx src/scripts/syncCatalog.ts starwars",
+    "sync:fab": "tsx src/scripts/syncCatalog.ts fab",
+    "sync:others": "tsx src/scripts/syncCatalog.ts all"
   },
   "dependencies": {
     "@cardscan/config": "workspace:*",

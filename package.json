@@ -24,7 +24,14 @@
     "sync:yugioh": "pnpm --filter @cardscan/api run sync:yugioh",
     "test": "pnpm -r --workspace-concurrency=1 run test",
     "test:e2e": "pnpm --filter @cardscan/web run test:e2e",
-    "test:e2e:mobile": "pnpm --filter @cardscan/mobile run test:e2e"
+    "test:e2e:mobile": "pnpm --filter @cardscan/mobile run test:e2e",
+    "sync:lorcana": "pnpm --filter @cardscan/api run sync:lorcana",
+    "sync:onepiece": "pnpm --filter @cardscan/api run sync:onepiece",
+    "sync:digimon": "pnpm --filter @cardscan/api run sync:digimon",
+    "sync:starwars": "pnpm --filter @cardscan/api run sync:starwars",
+    "sync:fab": "pnpm --filter @cardscan/api run sync:fab",
+    "sync:others": "pnpm --filter @cardscan/api run sync:others",
+    "sync:all": "pnpm sync:pokemon && pnpm sync:magic && pnpm sync:yugioh && pnpm sync:others"
   },
   "devDependencies": {
     "@prisma/client": "^5.19.1",

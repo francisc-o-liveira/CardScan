@@ -10,7 +10,7 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 1 — Foundation** is done: monorepo scaffolding, authentication (register/login/refresh/logout/forgot-password/reset-password), the full core database schema, and a navigable web + mobile shell.
 
-**Phase 2 — Card database** has started: the full Pokémon catalog (205 sets, ~21.3k physical cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. Yu-Gi-Oh! (~45k printings of ~14.5k cards, via [YGOPRODeck](https://ygoprodeck.com/api-guide/), `pnpm sync:yugioh`) is imported too, with its images downloaded and re-hosted by the API because YGOPRODeck forbids hotlinking. Both the web and mobile apps have a searchable Card Database (mobile: infinite scroll, TCG chips, set picker).
+**Phase 2 — Card database** has started: the full Pokémon catalog (205 sets, ~21.3k physical cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. Yu-Gi-Oh! (~45k printings of ~14.5k cards, via [YGOPRODeck](https://ygoprodeck.com/api-guide/), `pnpm sync:yugioh`) is imported too, with its images downloaded and re-hosted by the API because YGOPRODeck forbids hotlinking. **All eight games the app lists now have real catalogs**: the five newest — Disney Lorcana ([Lorcast](https://lorcast.com/docs/api)), One Piece ([OPTCG API](https://optcgapi.com)), Digimon ([digimoncard.io](https://digimoncard.io/api)), Star Wars: Unlimited ([SWU-DB](https://www.swu-db.com/api)) and Flesh and Blood ([fab-cube dataset](https://github.com/the-fab-cube/flesh-and-blood-cards)) — are imported through one shared sync (`pnpm sync:others`), all from free, keyless sources. Both the web and mobile apps have a searchable Card Database (mobile: infinite scroll, TCG chips, set picker).
 
 **Phase 2's UI has landed.** The web and mobile clients were rebuilt around a shared design system, and the catalog is now browsable and searchable end to end — Discover, Search, set detail and card detail all read live data. See [`docs/design-system.md`](docs/design-system.md) for the visual system and the per-screen specification.
 
@@ -75,6 +75,9 @@ pnpm prisma:migrate
 pnpm sync:pokemon   # from TCGdex — ~20s
 pnpm sync:magic     # from Scryfall — downloads a ~78MB bulk file, a few minutes
 pnpm sync:yugioh    # from YGOPRODeck — downloads and re-hosts ~14.5k card images, ~5 minutes
+pnpm sync:others    # Lorcana, One Piece, Digimon, Star Wars: Unlimited, Flesh and Blood — ~3 minutes
+                    # (or each on its own: sync:lorcana | sync:onepiece | sync:digimon | sync:starwars | sync:fab)
+                    # `pnpm sync:all` runs all eight games
 
 # 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100
@@ -133,6 +136,8 @@ pnpm docker:down   # stop them
 | `pnpm sync:pokemon`    | Import the Pokémon catalog (sets, cards, images) from TCGdex |
 | `pnpm sync:magic`      | Import the Magic catalog (sets, cards, images) from Scryfall |
 | `pnpm sync:yugioh`     | Import the Yu-Gi-Oh! catalog from YGOPRODeck and re-host its images |
+| `pnpm sync:others`     | Import Lorcana, One Piece, Digimon, Star Wars: Unlimited and Flesh and Blood (see docs/database.md) |
+| `pnpm sync:all`        | Import all eight games |
 | `pnpm test`            | Run validation, API (real Postgres) and web tests — see [docs/testing.md](docs/testing.md) |
 | `pnpm test:e2e`        | Run the Playwright browser tests (cards + images loading end-to-end) |
 | `pnpm test:e2e:mobile` | Run the mobile app (Expo web build) in a browser against the real API |

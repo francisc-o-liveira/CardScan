@@ -35,6 +35,17 @@ test.describe("Search — loading cards in the browser", () => {
       expectedName: /blue-eyes white dragon/i,
       imageHost: "/assets/yugioh/cards/",
     },
+    { game: "Lorcana", search: "Elsa", expectedName: /elsa/i, imageHost: "cards.lorcast.io" },
+    // Hobby-run source: images are re-hosted by our own API instead of hotlinked.
+    { game: "One Piece", search: "Luffy", expectedName: /luffy/i, imageHost: "/assets/onepiece/cards/" },
+    { game: "Digimon", search: "Agumon", expectedName: /agumon/i, imageHost: "images.digimoncard.io" },
+    { game: "Star Wars", search: "Luke Skywalker", expectedName: /luke skywalker/i, imageHost: "cdn.swu-db.com" },
+    {
+      game: "Flesh & Blood",
+      search: "Wounded Bull",
+      expectedName: /wounded bull/i,
+      imageHost: "legendstory-production-s3-public.s3.amazonaws.com",
+    },
   ]) {
     test(`${scenario.game}: searching "${scenario.search}" shows matching cards with loaded images`, async ({
       page,
@@ -61,6 +72,32 @@ test.describe("Search — loading cards in the browser", () => {
       // YGOPRODeck blacklists hotlinkers: our images must be served from our own API, never from their host.
       for (const src of sources) expect(src).not.toContain("ygoprodeck");
 
+      expect(problems.failedRequests).toEqual([]);
+    });
+  }
+
+  // Every game the site lists must be browsable: results, and images that really decode.
+  // (Search only queries once 2+ characters are typed, so each game gets a term it certainly has.)
+  for (const { game, term } of [
+    { game: "Pokémon", term: "Pikachu" },
+    { game: "Magic", term: "Lightning Bolt" },
+    { game: "Yu-Gi-Oh!", term: "Dark Magician" },
+    { game: "Lorcana", term: "Mickey" },
+    { game: "One Piece", term: "Luffy" },
+    { game: "Digimon", term: "Agumon" },
+    { game: "Star Wars", term: "Luke" },
+    { game: "Flesh & Blood", term: "Wounded" },
+  ]) {
+    test(`${game}: the game filter lists real cards with loaded images`, async ({ page }) => {
+      const problems = watchForProblems(page);
+      await page.goto("/search");
+      await page.getByRole("radio", { name: game, exact: true }).click();
+      await searchBox(page).fill(term);
+
+      const grid = cardGrid(page);
+      await expect(grid).toBeVisible();
+      await expect(cardNames(page).first()).toBeVisible();
+      expect(await expectAllCardImagesLoaded(grid)).toBeGreaterThan(0);
       expect(problems.failedRequests).toEqual([]);
     });
   }
@@ -109,11 +146,15 @@ test.describe("Search — loading cards in the browser", () => {
     await sheet.getByRole("button", { name: /^Base Set/ }).first().click();
     await sheet.getByRole("button", { name: "Show results" }).click();
 
+    // The filter lives in the URL, and the results shrink to the handful of Base Set "char" cards.
+    await expect(page).toHaveURL(/game=pokemon/);
+    await expect(page).toHaveURL(/set=/);
     const grid = cardGrid(page);
-    await expect(grid.getByText("Base Set · ").first()).toBeVisible();
-    for (const line of await grid.locator("p.text-faint").allInnerTexts()) {
-      if (line.includes("·")) expect(line).toContain("Base Set");
-    }
+    await expect(grid).toBeVisible();
+    await expect.poll(async () => cardNames(page).count()).toBeLessThanOrEqual(5);
+    const names = await cardNames(page).allInnerTexts();
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) expect(name).toMatch(/char/i);
     await expectAllCardImagesLoaded(grid);
   });
 
@@ -130,12 +171,14 @@ test.describe("Search — loading cards in the browser", () => {
     let failing = true;
     await page.route("**/api/cards**", (route) => (failing ? route.abort() : route.continue()));
     await searchBox(page).fill("pikachu");
-    await expect(page.getByRole("alert")).toContainText(/search didn.t come back/i);
+    // (Next.js also renders its own role=alert route announcer, so scope to our error panel.)
+    const errorPanel = page.getByRole("alert").filter({ hasText: /search didn.t come back/i });
+    await expect(errorPanel).toBeVisible();
 
     failing = false;
     await page.getByRole("button", { name: /try again/i }).click();
     await expect(cardGrid(page).getByText(/pikachu/i).first()).toBeVisible();
-    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(errorPanel).toHaveCount(0);
   });
 
   test("a card whose image is broken falls back to a placeholder instead of a broken icon", async ({
@@ -179,10 +222,10 @@ test.describe("Search — access and layout", () => {
     await expect(searchBox(page)).toBeVisible();
   });
 
-  test("the old /cards route still lands on search", async ({ page }) => {
+  test("the old /cards route redirects to Discover", async ({ page }) => {
     await page.goto("/cards");
-    await expect(page).toHaveURL(/\/search/);
-    await expect(page.getByRole("heading", { name: "Search", level: 1 })).toBeVisible();
+    await expect(page).toHaveURL(/\/discover/);
+    await expect(page.getByRole("heading", { name: "Discover", level: 1 })).toBeVisible();
   });
 });
 

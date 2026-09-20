@@ -26,7 +26,11 @@ export function RegisterScreen() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    // Controlled inputs must start with a value, or React warns when they switch from undefined.
+    defaultValues: { username: "", email: "", password: "" },
+  });
 
   const onSubmit = async (values: RegisterInput) => {
     setFormError(null);

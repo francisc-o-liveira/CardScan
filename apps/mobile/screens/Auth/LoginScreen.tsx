@@ -25,7 +25,11 @@ export function LoginScreen() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    // Controlled inputs must start with a value, or React warns when they switch from undefined.
+    defaultValues: { email: "", password: "" },
+  });
 
   const onSubmit = async (values: LoginInput) => {
     setFormError(null);

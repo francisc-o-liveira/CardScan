@@ -107,6 +107,8 @@ function SearchContent() {
           size="lg"
           onClick={() => setSheetOpen(true)}
           aria-expanded={sheetOpen}
+          // The visible "Filters" text is hidden on phones, which would leave an icon-only, unnamed button.
+          aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
           className="shrink-0"
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden />

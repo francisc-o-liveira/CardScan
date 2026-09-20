@@ -85,11 +85,11 @@ export const TCG_CATALOG_STATUS: Record<SupportedTcg, "live" | "planned"> = {
   pokemon: "live",
   magic: "live",
   yugioh: "live",
-  lorcana: "planned",
-  onepiece: "planned",
-  digimon: "planned",
-  starwars: "planned",
-  fab: "planned",
+  lorcana: "live",
+  onepiece: "live",
+  digimon: "live",
+  starwars: "live",
+  fab: "live",
 };
 
 /** Games with a searchable catalog today, in the order they should be offered. */

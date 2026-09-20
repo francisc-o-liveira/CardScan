@@ -66,6 +66,39 @@ Notes:
 - Set images (`set_image`) are not used, for the same hotlinking reason, so `symbolUrl` is null for Yu-Gi-Oh! sets.
 - Nine (set, print code, rarity) combinations appear twice in the source data; the later entry wins.
 
+## The other five games (Lorcana, One Piece, Digimon, Star Wars: Unlimited, Flesh and Blood)
+
+```bash
+pnpm sync:lorcana     # Disney Lorcana        — Lorcast API
+pnpm sync:onepiece    # One Piece             — OPTCG API (re-hosts images, ~2 min the first time)
+pnpm sync:digimon     # Digimon               — digimoncard.io
+pnpm sync:starwars    # Star Wars: Unlimited  — SWU-DB
+pnpm sync:fab         # Flesh and Blood       — the-fab-cube open dataset
+pnpm sync:others      # all five
+pnpm sync:all         # all eight games
+```
+
+These share one sync core instead of five copies: a game is a small adapter (`apps/api/src/providers/<game>/provider.ts`) that turns its source into `{ sets, cards }`, and `apps/api/src/services/catalogSyncService.ts` does the rest (upserts, duplicate handling, image policy, reporting). Adding a sixth game means writing one adapter and registering it in `providers/registry.ts`. All sources are free and need no API key; every request carries a descriptive `User-Agent` and transient failures (429/5xx/network) are retried with backoff.
+
+| Game | Source | Requests | Cards | Images |
+| ---- | ------ | -------- | ----- | ------ |
+| Disney Lorcana | [Lorcast](https://lorcast.com/docs/api) | 1 + one per set (24), spaced ~120ms | ~3.2k | Lorcast CDN, **hotlinked** (AVIF only) |
+| One Piece | [OPTCG API](https://optcgapi.com) | 2 (boosters + starter decks) | ~4.2k artworks | **re-hosted** in `/assets/onepiece/…` (small hobby-run site) |
+| Digimon | [digimoncard.io](https://digimoncard.io/api) | 1 | ~4.5k | digimoncard.io image host, hotlinked |
+| Star Wars: Unlimited | [SWU-DB](https://www.swu-db.com/api) | 1 + one per set (~54), spaced 150ms | ~9.9k (incl. foil/hyperspace/showcase numbers) | SWU-DB CDN, hotlinked |
+| Flesh and Blood | [fab-cube dataset](https://github.com/the-fab-cube/flesh-and-blood-cards) (GitHub) | 2 static JSON files (~23MB) | ~16.7k printings | Official Legend Story Studios CDN, hotlinked |
+
+Notes:
+- **Image policy** is per source (`imagePolicy: "hotlink" | "rehost"`). Official/CDN-backed sources are hotlinked; the hobby-run OPTCG site is downloaded once and served from our own `/assets`, exactly like Yu-Gi-Oh!. None of the five documents a hotlinking ban (unlike YGOPRODeck), but if one ever does, flip that provider to `rehost` and re-run its sync.
+- **Row identity** is `(set, collectorNumber, variant)`; `variant` is `""` when there is none. Where a source repeats a collector number, the adapter makes the variant distinguish them: Flesh and Blood uses `edition-foiling-art` (plus part of the printing's unique id for the ~150 genuinely identical combinations); One Piece uses the *artwork id* (`OP01-077_p1`) as the number, so parallel arts are separate cards. Rows a source lists twice are merged (the later wins) and reported.
+- **Names:** Lorcana is `Name - Version`, Star Wars is `Name - Subtitle`, and Flesh and Blood appends the pitch colour (`Wounded Bull (Red)`), because those cards are otherwise indistinguishable in a grid.
+- **Set codes:** Lorcast/SWU-DB/OPTCG/fab-cube set codes are used as-is. Digimon card numbers only carry a code (`BT3`), so its readable name (`BT-03: Booster Union Impact`) is matched from each card's `set_name` list; promos are `P` ("Promotional cards").
+- **Not imported:** digital-only/online cards aren't in these sources; card text, stats and prices are available in most of them but aren't stored (the schema only holds what a card grid needs).
+- **Star Wars foil images:** SWU-DB lists foil versions with an `F` number (`059F`) and points them at `…/059F.png`, which the CDN answers with 403 — about half of all Star Wars cards. A foil is the same artwork as its non-foil, so the adapter rewrites those URLs to `…/059.png` (`swuImageUrl`). Roughly 1% of Star Wars cards (mostly tournament promo sets such as `TWIPQ`/`TSHD`) have no image on the CDN at all; the apps show the placeholder for them.
+- **Verified against the live sources:** a random sample of 300 image URLs per game was requested from each CDN — Lorcana, Digimon, Flesh and Blood, Pokémon and Magic were 300/300, Star Wars 99%; every re-hosted One Piece and Yu-Gi-Oh! file exists on disk.
+- **AVIF:** Lorcast serves card images only as AVIF. Every current browser and Android 12+/iOS 16+ render it; older phones won't show Lorcana art (the placeholder appears instead).
+- The Flesh and Blood dataset is a community project tracking the `develop` branch (unlicensed repository — verify the terms before any commercial use); point `FAB_DATA_URL` at a pinned commit to freeze it.
+
 ## Migrations
 
 ```bash

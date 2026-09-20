@@ -17,6 +17,14 @@ const envSchema = z.object({
   POKEMON_API_URL: z.string().min(1).default("https://api.tcgdex.net/v2/en"),
   MAGIC_API_URL: z.string().min(1).default("https://api.scryfall.com"),
   YUGIOH_API_URL: z.string().min(1).default("https://db.ygoprodeck.com/api/v7"),
+  LORCANA_API_URL: z.string().min(1).default("https://api.lorcast.com/v0"),
+  ONEPIECE_API_URL: z.string().min(1).default("https://optcgapi.com/api"),
+  DIGIMON_API_URL: z.string().min(1).default("https://digimoncard.io/api-public"),
+  STARWARS_API_URL: z.string().min(1).default("https://api.swu-db.com"),
+  FAB_DATA_URL: z
+    .string()
+    .min(1)
+    .default("https://raw.githubusercontent.com/the-fab-cube/flesh-and-blood-cards/develop/json/english"),
   ASSETS_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage")),
   API_PUBLIC_URL: z.string().min(1).default("http://localhost:4100"),
 });

@@ -12,8 +12,8 @@ setup("register a fresh user through the UI and save its credentials", async ({ 
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Create account" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText(`, ${user.username}`)).toBeVisible();
+  // New accounts land on onboarding.
+  await expect(page).toHaveURL(/\/welcome/);
 
   fs.mkdirSync(path.dirname(E2E_USER_FILE), { recursive: true });
   fs.writeFileSync(E2E_USER_FILE, JSON.stringify(user));

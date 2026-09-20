@@ -62,7 +62,10 @@ export function watchForProblems(page: Page): Problems {
  */
 export async function loadedCardImages(page: Page): Promise<{ total: number; loaded: number; sources: string[] }> {
   return page.evaluate(() => {
-    const imgs = Array.from(document.querySelectorAll<HTMLImageElement>('[data-testid="card-image"] img'));
+    // Only the Card Database list: screens underneath it (Discover's rails) stay mounted with their own card images.
+    const imgs = Array.from(
+      document.querySelectorAll<HTMLImageElement>('[data-testid="card-list"] [data-testid="card-image"] img'),
+    );
     return {
       total: imgs.length,
       loaded: imgs.filter((img) => img.complete && img.naturalWidth > 0).length,
