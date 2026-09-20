@@ -10,7 +10,7 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 1 — Foundation** is done: monorepo scaffolding, authentication (register/login/refresh/logout/forgot-password/reset-password), the full core database schema, and a navigable web + mobile shell.
 
-**Phase 2 — Card database** has started: the full Pokémon catalog (220 sets, ~23.7k cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. The card database search UI isn't built yet.
+**Phase 2 — Card database** has started: the full Pokémon catalog (205 sets, ~21.3k physical cards, ~92% with card images) is imported from [TCGdex](https://tcgdex.dev) via `pnpm sync:pokemon`, and the full Magic: The Gathering catalog (1,051 sets, ~109k paper cards, >99% with images) from [Scryfall](https://scryfall.com/docs/api) via `pnpm sync:magic` — both queryable through read-only `/api/tcgs`, `/api/sets`, `/api/cards` endpoints. Yu-Gi-Oh! (~45k printings of ~14.5k cards, via [YGOPRODeck](https://ygoprodeck.com/api-guide/), `pnpm sync:yugioh`) is imported too, with its images downloaded and re-hosted by the API because YGOPRODeck forbids hotlinking. Both the web and mobile apps have a searchable Card Database (mobile: infinite scroll, TCG chips, set picker).
 
 Scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap).
 
@@ -71,6 +71,7 @@ pnpm prisma:migrate
 # 5. Import the card catalogs (sets + cards + images)
 pnpm sync:pokemon   # from TCGdex — ~20s
 pnpm sync:magic     # from Scryfall — downloads a ~78MB bulk file, a few minutes
+pnpm sync:yugioh    # from YGOPRODeck — downloads and re-hosts ~14.5k card images, ~5 minutes
 
 # 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100
@@ -126,13 +127,17 @@ pnpm docker:down   # stop them
 | `pnpm prisma:studio`   | Open Prisma Studio                            |
 | `pnpm sync:pokemon`    | Import the Pokémon catalog (sets, cards, images) from TCGdex |
 | `pnpm sync:magic`      | Import the Magic catalog (sets, cards, images) from Scryfall |
+| `pnpm sync:yugioh`     | Import the Yu-Gi-Oh! catalog from YGOPRODeck and re-host its images |
+| `pnpm test`            | Run validation, API (real Postgres) and web tests — see [docs/testing.md](docs/testing.md) |
+| `pnpm test:e2e`        | Run the Playwright browser tests (cards + images loading end-to-end) |
+| `pnpm test:e2e:mobile` | Run the mobile app (Expo web build) in a browser against the real API |
 
 ## Roadmap
 
 Built in phases — see [`docs/architecture.md`](docs/architecture.md) for details:
 
 1. **Foundation** — monorepo, auth, DB schema, web/mobile shell
-2. **Card database** (in progress) — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`) and Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`); card database search UI not started yet
+2. **Card database** (in progress) — Pokémon ([TCGdex](https://tcgdex.dev)), Magic ([Scryfall](https://scryfall.com/docs/api)) and Yu-Gi-Oh! ([YGOPRODeck](https://ygoprodeck.com/api-guide/)) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`) and a searchable Card Database on web and mobile
 3. **Scanner** — camera capture, recognition pipeline, confidence scoring
 4. **Collection** — add/remove cards, quantities, conditions, statistics
 5. **Wishlist**

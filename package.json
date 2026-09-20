@@ -20,7 +20,11 @@
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema=prisma/schema.prisma",
     "prisma:studio": "dotenv -e .env -- prisma studio --schema=prisma/schema.prisma",
     "sync:pokemon": "pnpm --filter @cardscan/api run sync:pokemon",
-    "sync:magic": "pnpm --filter @cardscan/api run sync:magic"
+    "sync:magic": "pnpm --filter @cardscan/api run sync:magic",
+    "sync:yugioh": "pnpm --filter @cardscan/api run sync:yugioh",
+    "test": "pnpm -r --workspace-concurrency=1 run test",
+    "test:e2e": "pnpm --filter @cardscan/web run test:e2e",
+    "test:e2e:mobile": "pnpm --filter @cardscan/mobile run test:e2e"
   },
   "devDependencies": {
     "@prisma/client": "^5.19.1",

@@ -1,0 +1,24 @@
+# Testing
+
+```bash
+pnpm docker:up      # Postgres must be running for the API tests
+pnpm test           # validation + API + web unit/integration tests
+pnpm test:e2e       # web browser tests (see below)
+pnpm test:e2e:mobile  # mobile app in a browser (React Native Web)
+```
+
+| Suite | Tool | What it covers |
+| ----- | ---- | -------------- |
+| `packages/validation` | Vitest | Every Zod schema: password/username rules, coercion, pagination and catalog query limits. |
+| `apps/api/tests/unit` | Vitest | Durations, bounded concurrency, token and password hashing, JWTs, and the provider normalizers (TCGdex/Scryfall image URLs, Yu-Gi-Oh! printings and set slugs). |
+| `apps/api/tests/integration` | Vitest + Supertest + real Postgres | Auth (register, login, `/me`, refresh rotation for web *and* mobile, logout, password reset, duplicates, validation, generic login errors), rate limiting, security headers and CORS, the catalog endpoints (filters, search, pagination, 400/404s, SQL-metacharacter safety), `/assets` image serving, and all three sync services (idempotency, missing images, failed downloads, digital-card skipping) using fake providers. |
+| `apps/web/tests` | Vitest + Testing Library (jsdom) | `CardTile` (image, alt text, lazy loading, broken-image fallback, quantity), the Card Database page (skeletons, images, debounced search, TCG → set filters, pagination, empty and error/retry states), the debounce hook, and the axios auth interceptor (token attach, silent refresh, single-flight refresh, logout on failure). |
+| `apps/mobile/tests` | Jest (jest-expo) + React Native Testing Library | `CardTile` (image source, placeholder on missing/broken image, quantity, press), the Card Database screen (loading, images, debounced search, TCG chips, set picker, infinite scroll, empty and error/retry states), the localhost → API-host image URL rewrite, the API client (mobile header, bearer token), the catalog service, and session restore from the stored refresh token (including the Strict Mode double-refresh regression). |
+| `apps/mobile/e2e` | Playwright against the Expo **web** build (React Native Web) | The same screens in a real browser at phone size against the real API: opens the Card Database from Home, and verifies cards and images load (`naturalWidth > 0`) for Pokémon, Magic and Yu-Gi-Oh!, plus infinite scroll, set filter, empty/error states, broken-image fallback and session restore. This is **not** a native run — see below. |
+| `apps/web/e2e` | Playwright (Chromium; desktop + Pixel 7) | The whole stack in a browser: sign up through the UI, open the Card Database, and verify that cards **and their images really load** (`naturalWidth > 0`, no failed image requests, no console errors) for Pokémon, Magic and Yu-Gi-Oh!, plus pagination, set filter, empty/error states, broken-image fallback, session restore on reload, no horizontal scroll, and the signed-out redirect. |
+
+## Details
+
+- **API tests use a separate database**, `cardscan_test` (override with `TEST_DATABASE_URL`). `tests/global-setup.ts` creates and migrates it automatically, and every test file truncates it first, so development data is never touched. Files run one at a time because they share the database.
+- **E2E tests use your real dev data.** They need the catalogs imported (`pnpm sync:pokemon`, `sync:magic`, `sync:yugioh`) because they assert that real cards and images load. Playwright starts the API and web dev servers if they aren't running (the API with a relaxed auth rate limit), registers a throwaway `e2e_*` user, and each test signs in on its own (refresh tokens rotate on use, so a shared saved session would go stale). First run: `pnpm --filter @cardscan/web exec playwright install chromium`.
+- **What the mobile browser test does not cover:** native rendering, `expo-secure-store` (the web build falls back to `localStorage`), and device networking. Run the app on a phone or emulator for that: an Android emulator reaches the API at `10.0.2.2` (the app picks this automatically); a physical device needs `EXPO_PUBLIC_API_URL=http://<your-computer-LAN-IP>:4100/api` in `apps/mobile/.env`. Re-hosted Yu-Gi-Oh! images are stored with a `localhost` URL, which the app re-points at that same API host (`utils/imageUrl.ts`).

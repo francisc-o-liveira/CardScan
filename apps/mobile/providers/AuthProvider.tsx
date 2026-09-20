@@ -26,6 +26,18 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Refresh tokens rotate on use, so two simultaneous refreshes with the same stored token make one of
+ * them fail with 401 (Strict Mode and hot reloads run effects twice). Callers share the request in flight.
+ */
+let sessionRestore: ReturnType<typeof api.auth.refresh> | null = null;
+const restoreSession = () => {
+  sessionRestore ??= api.auth.refresh().finally(() => {
+    sessionRestore = null;
+  });
+  return sessionRestore;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           return;
         }
-        const session = await api.auth.refresh();
+        const session = await restoreSession();
         setAccessToken(session.tokens.accessToken);
         if (session.tokens.refreshToken) {
           await setStoredRefreshToken(session.tokens.refreshToken);

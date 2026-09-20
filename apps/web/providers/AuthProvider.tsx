@@ -24,6 +24,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Refresh tokens rotate on use, so two simultaneous refreshes with the same cookie make one of them
+ * fail with 401 (React Strict Mode runs effects twice in development; two tabs can do the same).
+ * All callers share the request that is already in flight.
+ */
+let sessionRestore: ReturnType<typeof api.auth.refresh> | null = null;
+const restoreSession = () => {
+  sessionRestore ??= api.auth.refresh().finally(() => {
+    sessionRestore = null;
+  });
+  return sessionRestore;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const session = await api.auth.refresh();
+        const session = await restoreSession();
         if (cancelled) return;
         setAccessToken(session.tokens.accessToken);
         setUser(session.user);

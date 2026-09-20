@@ -20,11 +20,12 @@ export const LANGUAGE_LABELS: Record<(typeof SUPPORTED_LANGUAGES)[number], strin
   it: "Italian",
 };
 
-export const SUPPORTED_TCGS = ["pokemon", "magic"] as const;
+export const SUPPORTED_TCGS = ["pokemon", "magic", "yugioh"] as const;
 
 export const TCG_LABELS: Record<(typeof SUPPORTED_TCGS)[number], string> = {
   pokemon: "Pokémon",
   magic: "Magic: The Gathering",
+  yugioh: "Yu-Gi-Oh!",
 };
 
 /**

@@ -45,6 +45,20 @@ export function HomeScreen() {
           ))}
         </View>
 
+        <Pressable
+          style={({ pressed }) => [styles.browseRow, pressed && styles.scanCardPressed]}
+          onPress={() => router.push("/cards")}
+          accessibilityRole="button"
+          accessibilityLabel="Card Database"
+        >
+          <Ionicons name="albums-outline" size={20} color={COLORS.dark.primary} />
+          <View style={styles.browseText}>
+            <Text style={styles.browseTitle}>Card Database</Text>
+            <Text style={styles.browseSubtitle}>Browse Pokémon, Magic and Yu-Gi-Oh! cards</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.dark.baseContentMuted} />
+        </Pressable>
+
         <Text style={styles.sectionTitle}>Recently Scanned</Text>
         <EmptyState
           icon="scan-outline"
@@ -91,5 +105,19 @@ const styles = StyleSheet.create({
   },
   tileValue: { color: COLORS.dark.baseContent, fontSize: 20, fontWeight: "700" },
   tileLabel: { color: COLORS.dark.baseContentMuted, fontSize: 12, marginTop: 2 },
+  browseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 56,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.dark.border,
+    backgroundColor: COLORS.dark.base200,
+  },
+  browseText: { flex: 1 },
+  browseTitle: { color: COLORS.dark.baseContent, fontSize: 15, fontWeight: "600" },
+  browseSubtitle: { color: COLORS.dark.baseContentMuted, fontSize: 12, marginTop: 1 },
   sectionTitle: { color: COLORS.dark.baseContent, fontSize: 15, fontWeight: "600" },
 });

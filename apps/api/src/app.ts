@@ -13,9 +13,20 @@ export const createApp = () => {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CORS_ORIGIN,
+      // Comma-separated list: the web app, and the Expo web build of the mobile app in development.
+      origin: env.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean),
       credentials: true,
     }),
+  );
+  // Re-hosted card images. Helmet's default same-origin resource policy would stop the web app
+  // (a different origin in dev) from displaying them, so this route opts in to cross-origin use.
+  app.use(
+    "/assets",
+    (_req, res, next) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      next();
+    },
+    express.static(env.ASSETS_DIR, { maxAge: "30d", immutable: true, index: false }),
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());

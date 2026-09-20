@@ -1,5 +1,5 @@
 /** Slug identifying a supported trading card game. New TCGs are added by extending this union. */
-export type TcgSlug = "pokemon" | "magic";
+export type TcgSlug = "pokemon" | "magic" | "yugioh";
 
 export interface Tcg {
   id: string;

@@ -32,3 +32,35 @@ export interface CardSearchParams {
   limit?: number;
   sortBy?: "name" | "price" | "rarity" | "releaseDate";
 }
+
+/** Card as returned by `GET /api/cards` — a single printing with its set and TCG attached. */
+export interface CatalogCard {
+  id: string;
+  tcgId: string;
+  setId: string;
+  name: string;
+  collectorNumber: string;
+  rarity: string | null;
+  variant: string | null;
+  imageUrl: string | null;
+  set: { id: string; code: string; name: string };
+  tcg: { id: string; slug: TcgSlug; name: string };
+}
+
+export interface CatalogSet {
+  id: string;
+  tcgId: string;
+  code: string;
+  name: string;
+  releaseDate: string | null;
+  totalCards: number | null;
+  symbolUrl: string | null;
+  tcg: { id: string; slug: TcgSlug; name: string };
+}
+
+export interface CatalogTcg {
+  id: string;
+  slug: TcgSlug;
+  name: string;
+  isEnabled: boolean;
+}

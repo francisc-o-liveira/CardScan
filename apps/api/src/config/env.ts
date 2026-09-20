@@ -13,8 +13,12 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   POKEMON_API_URL: z.string().min(1).default("https://api.tcgdex.net/v2/en"),
   MAGIC_API_URL: z.string().min(1).default("https://api.scryfall.com"),
+  YUGIOH_API_URL: z.string().min(1).default("https://db.ygoprodeck.com/api/v7"),
+  ASSETS_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage")),
+  API_PUBLIC_URL: z.string().min(1).default("http://localhost:4100"),
 });
 
 const parsed = envSchema.safeParse(process.env);
