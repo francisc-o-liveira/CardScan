@@ -7,7 +7,7 @@ async function main() {
   const result = await syncPokemonCatalog();
   const seconds = ((Date.now() - start) / 1000).toFixed(1);
   console.log(
-    `[pokemon-sync] Done in ${seconds}s — ${result.setsProcessed} sets synced, ${result.setsFailed} failed, ${result.cardsUpserted} cards upserted.`,
+    `[pokemon-sync] Done in ${seconds}s — ${result.setsProcessed} sets synced, ${result.setsSkipped} digital-only skipped, ${result.setsFailed} failed, ${result.cardsUpserted} cards upserted.`,
   );
 }
 

@@ -1,37 +1,15 @@
-import type { ApiResponse, PaginatedResponse, TcgSlug } from "@cardscan/types";
+import type {
+  ApiResponse,
+  CatalogCard,
+  CatalogSet,
+  CatalogTcg,
+  PaginatedResponse,
+  TcgSlug,
+} from "@cardscan/types";
 import { apiClient } from "@/lib/api-client";
 
-/** Mirrors apps/web/services/catalog.ts so both clients read the same shapes. */
-export interface CatalogTcg {
-  id: string;
-  slug: TcgSlug;
-  name: string;
-  isEnabled: boolean;
-}
-
-export interface CatalogSet {
-  id: string;
-  tcgId: string;
-  code: string;
-  name: string;
-  releaseDate: string | null;
-  totalCards: number | null;
-  symbolUrl: string | null;
-  tcg?: CatalogTcg;
-}
-
-export interface CatalogCard {
-  id: string;
-  tcgId: string;
-  setId: string;
-  name: string;
-  collectorNumber: string;
-  rarity: string | null;
-  variant: string | null;
-  imageUrl: string | null;
-  set?: CatalogSet;
-  tcg?: CatalogTcg;
-}
+/** Shared with web and the API through @cardscan/types, so shapes can't drift. */
+export type { CatalogCard, CatalogSet, CatalogTcg };
 
 export interface ListCardsParams {
   query?: string;
@@ -47,6 +25,10 @@ const unwrap = <T>(body: ApiResponse<T>): T => {
 };
 
 export const catalogApi = {
+  listTcgs: async (): Promise<CatalogTcg[]> => {
+    const { data } = await apiClient.get<ApiResponse<CatalogTcg[]>>("/tcgs");
+    return unwrap(data);
+  },
   listSets: async (tcg?: TcgSlug): Promise<CatalogSet[]> => {
     const { data } = await apiClient.get<ApiResponse<CatalogSet[]>>("/sets", {
       params: tcg ? { tcg } : undefined,

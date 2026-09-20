@@ -1,15 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { Check } from "lucide-react";
 import { TCG_COLORS } from "@cardscan/config";
 import type { TcgSlug } from "@cardscan/types";
-import type { CatalogCard } from "@/services/catalog";
 import { CardImage } from "./CardImage";
 import { cn } from "@/lib/cn";
 
+/**
+ * Only the fields the tile actually draws. Declaring them structurally lets it
+ * take a full catalog card as well as the narrower rows nested in other
+ * responses (a set's `cards`, for instance) without a cast.
+ */
+export interface CardTileCard {
+  id: string;
+  name: string;
+  collectorNumber: string;
+  rarity: string | null;
+  imageUrl: string | null;
+  set?: { name: string } | null;
+  tcg?: { slug: TcgSlug } | null;
+}
+
 interface CardTileProps {
-  card: CatalogCard;
+  card: CardTileCard;
   /** Show which game this is. Off inside a single-game grid — it's redundant there. */
   showGame?: boolean;
   /**
@@ -17,12 +30,16 @@ interface CardTileProps {
    * 252 cards is noise — and where `GET /sets/:id` doesn't nest it anyway.
    */
   showSet?: boolean;
+  /** Off in dense grids where rarity would be a fourth line of small print. */
+  showRarity?: boolean;
   /**
    * Copies owned. Future / Requires Backend Support — there is no collection
    * endpoint yet, so nothing passes this today. The slot exists so "do I own
    * this?" becomes visible the moment the API lands.
    */
-  ownedQuantity?: number;
+  quantity?: number;
+  /** Handle the press yourself (a picker, say) instead of linking to the card. */
+  onClick?: () => void;
   priority?: boolean;
 }
 
@@ -37,17 +54,19 @@ export function CardTile({
   card,
   showGame,
   showSet = true,
-  ownedQuantity,
+  showRarity = true,
+  quantity,
+  onClick,
   priority,
 }: CardTileProps) {
-  const slug = card.tcg?.slug as TcgSlug | undefined;
+  const slug = card.tcg?.slug;
   const accent = slug ? TCG_COLORS[slug] : undefined;
+  const meta = [showSet ? card.set?.name : null, card.collectorNumber]
+    .filter(Boolean)
+    .join(" \u00B7 ");
 
-  return (
-    <Link
-      href={`/cards/${card.id}`}
-      className="group flex flex-col gap-2 rounded-card focus-visible:outline-offset-4"
-    >
+  const content = (
+    <>
       <div className="relative">
         <div className="overflow-hidden rounded-card shadow-card transition-transform duration-base ease-standard motion-safe:group-hover:-translate-y-1">
           <CardImage
@@ -55,6 +74,8 @@ export function CardTile({
             name={card.name}
             priority={priority}
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 16vw"
+            testId="card-image"
+            fallbackLabel="No image available"
           />
         </div>
 
@@ -67,16 +88,12 @@ export function CardTile({
           />
         )}
 
-        {typeof ownedQuantity === "number" && ownedQuantity > 0 && (
+        {quantity !== undefined && (
           <span
-            className="absolute right-1.5 top-1.5 flex min-h-6 min-w-6 items-center gap-0.5 rounded-full bg-success px-1.5 text-[0.6875rem] font-semibold text-base-100 shadow-sm"
-            title={`${ownedQuantity} ${ownedQuantity === 1 ? "copy" : "copies"} in your collection`}
+            className="absolute right-1.5 top-1.5 flex min-h-6 min-w-6 items-center justify-center rounded-full bg-success px-1.5 text-[0.6875rem] font-semibold text-base-100 shadow-sm"
+            title={`${quantity} ${quantity === 1 ? "copy" : "copies"} in your collection`}
           >
-            <Check className="h-3 w-3" aria-hidden />
-            {ownedQuantity > 1 && ownedQuantity}
-            <span className="sr-only">
-              {ownedQuantity} {ownedQuantity === 1 ? "copy" : "copies"} owned
-            </span>
+            x{quantity}
           </span>
         )}
       </div>
@@ -91,12 +108,24 @@ export function CardTile({
         >
           {card.name}
         </p>
-        <p className="truncate text-[0.75rem] text-faint">
-          {[showSet ? card.set?.name : null, card.collectorNumber && `#${card.collectorNumber}`]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
+        {meta && <p className="truncate text-[0.75rem] text-faint">{meta}</p>}
+        {showRarity && card.rarity && (
+          <p className="truncate text-[0.75rem] capitalize text-faint/80">{card.rarity}</p>
+        )}
       </div>
+    </>
+  );
+
+  const className =
+    "group flex flex-col gap-2 rounded-card text-left focus-visible:outline-offset-4";
+
+  return onClick ? (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  ) : (
+    <Link href={`/cards/${card.id}`} className={className}>
+      {content}
     </Link>
   );
 }

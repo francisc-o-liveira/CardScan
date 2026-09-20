@@ -1,41 +1,19 @@
-import type { ApiResponse, PaginatedResponse, TcgSlug } from "@cardscan/types";
+import type {
+  ApiResponse,
+  CatalogCard,
+  CatalogSet,
+  CatalogTcg,
+  PaginatedResponse,
+  TcgSlug,
+} from "@cardscan/types";
 import { apiClient } from "@/lib/api-client";
 
 /**
- * Shapes returned by the read-only catalog endpoints. These mirror the Prisma
- * rows the API sends (which include joined `set`/`tcg`), rather than the
- * narrower domain types in @cardscan/types.
+ * The catalog endpoints' response shapes live in @cardscan/types so web, mobile
+ * and the API can't drift; they are re-exported here because components read
+ * them from the service they came from.
  */
-export interface CatalogTcg {
-  id: string;
-  slug: TcgSlug;
-  name: string;
-  isEnabled: boolean;
-}
-
-export interface CatalogSet {
-  id: string;
-  tcgId: string;
-  code: string;
-  name: string;
-  releaseDate: string | null;
-  totalCards: number | null;
-  symbolUrl: string | null;
-  tcg?: CatalogTcg;
-}
-
-export interface CatalogCard {
-  id: string;
-  tcgId: string;
-  setId: string;
-  name: string;
-  collectorNumber: string;
-  rarity: string | null;
-  variant: string | null;
-  imageUrl: string | null;
-  set?: CatalogSet;
-  tcg?: CatalogTcg;
-}
+export type { CatalogCard, CatalogSet, CatalogTcg };
 
 export interface CatalogCardVariant {
   id: string;

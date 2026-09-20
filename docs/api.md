@@ -38,6 +38,14 @@ Read-only. Populated by `pnpm sync:pokemon` (see [`docs/database.md`](database.m
 | GET    | `/cards`              | Paginated (`page`, `limit`), filterable by `tcg`, `setId`, `query` (name, case-insensitive). |
 | GET    | `/cards/:id`          | A single card with its set, TCG, and variants.                      |
 
+Filter with `?tcg=pokemon|magic|yugioh`. Yu-Gi-Oh! is populated by `pnpm sync:yugioh` (see [`docs/database.md`](database.md#yu-gi-oh-catalog-sync)).
+
+## Static assets
+
+| Method | Path                            | Notes |
+| ------ | ------------------------------- | ----- |
+| GET    | `/assets/yugioh/cards/:id.jpg`  | Re-hosted Yu-Gi-Oh! card images. Long-lived cache headers, and `Cross-Origin-Resource-Policy: cross-origin` so the web app (another origin in dev) can display them. Unknown paths return the standard 404 envelope. |
+
 ## Planned (later phases)
 
 `/api/scans`, `/api/collection`, `/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.

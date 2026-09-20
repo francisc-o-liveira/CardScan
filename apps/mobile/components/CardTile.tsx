@@ -1,44 +1,86 @@
+import { memo, useState } from "react";
 import { View, Text, Image, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { CatalogCard } from "@/services/catalog";
+import { resolveImageUrl } from "@/utils/imageUrl";
 import { C, R, T, CARD_ASPECT } from "@/theme";
+
+/**
+ * Only the fields the tile draws. Declaring them structurally lets it take a
+ * full catalog card as well as the narrower rows nested in other responses.
+ */
+export interface CardTileCard {
+  name: string;
+  collectorNumber: string;
+  rarity: string | null;
+  imageUrl: string | null;
+  set?: { name: string } | null;
+}
+
+interface CardTileProps {
+  card: CardTileCard;
+  /** Fixed tile width, for rails and fixed-column grids. Omit to fill the column. */
+  width?: number;
+  quantity?: number;
+  showSet?: boolean;
+  showRarity?: boolean;
+  onPress?: () => void;
+}
 
 /**
  * Card artwork with two lines of metadata. Same content rules as the web tile:
  * the art carries the tile, and only name / set / number show at rest.
  */
-export function CardTile({
+function CardTileComponent({
   card,
   width,
+  quantity,
+  showSet = true,
+  showRarity = true,
   onPress,
-}: {
-  card: CatalogCard;
-  width: number;
-  onPress?: () => void;
-}) {
+}: CardTileProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const uri = resolveImageUrl(card.imageUrl);
+  const showImage = Boolean(uri) && !imageFailed;
+  const setName = card.set?.name ?? "Unknown set";
+
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? "button" : undefined}
-      accessibilityLabel={`${card.name}, ${card.set?.name ?? "unknown set"}`}
-      style={({ pressed }) => [{ width }, pressed && onPress ? styles.pressed : null]}
+      accessibilityLabel={`${card.name}, ${setName} ${card.collectorNumber}`}
+      style={({ pressed }) => [
+        width === undefined ? styles.fluid : { width },
+        pressed && onPress ? styles.pressed : null,
+      ]}
     >
-      <View style={[styles.frame, { width, height: width / CARD_ASPECT }]}>
-        {card.imageUrl ? (
+      <View
+        style={[
+          styles.frame,
+          width === undefined
+            ? { aspectRatio: CARD_ASPECT }
+            : { width, height: width / CARD_ASPECT },
+        ]}
+      >
+        {showImage ? (
           <Image
-            source={{ uri: card.imageUrl }}
+            source={{ uri: uri as string }}
             style={styles.image}
             resizeMode="cover"
             accessible
             accessibilityLabel={card.name}
+            testID="card-image"
+            onError={() => setImageFailed(true)}
           />
         ) : (
-          <View style={styles.fallback}>
+          <View style={styles.fallback} testID="card-image-fallback">
             <Ionicons name="image-outline" size={18} color={C.baseContentFaint} />
-            <Text style={styles.fallbackText} numberOfLines={3}>
-              {card.name}
-            </Text>
+            <Text style={styles.fallbackText}>No image</Text>
+          </View>
+        )}
+        {quantity !== undefined && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>x{quantity}</Text>
           </View>
         )}
       </View>
@@ -46,15 +88,24 @@ export function CardTile({
       <Text style={styles.name} numberOfLines={1}>
         {card.name}
       </Text>
-      <Text style={styles.meta} numberOfLines={1}>
-        {card.set?.name ?? "Unknown set"}
-        {card.collectorNumber ? ` \u00B7 #${card.collectorNumber}` : ""}
-      </Text>
+      {showSet && (
+        <Text style={styles.meta} numberOfLines={1}>
+          {setName} {"\u00B7"} {card.collectorNumber}
+        </Text>
+      )}
+      {showRarity && card.rarity ? (
+        <Text style={styles.rarity} numberOfLines={1}>
+          {card.rarity}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
 
+export const CardTile = memo(CardTileComponent);
+
 const styles = StyleSheet.create({
+  fluid: { flex: 1, padding: 6 },
   pressed: { opacity: 0.8 },
   frame: {
     borderRadius: R.sm + 2,
@@ -64,6 +115,17 @@ const styles = StyleSheet.create({
   image: { width: "100%", height: "100%" },
   fallback: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, padding: 8 },
   fallbackText: { color: C.baseContentFaint, fontSize: 11, textAlign: "center" },
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: C.primary,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  badgeText: { color: C.primaryContent, fontSize: 11, fontWeight: "700" },
   name: { marginTop: 8, color: C.baseContent, fontSize: T.meta, fontWeight: "600" },
   meta: { marginTop: 2, color: C.baseContentFaint, fontSize: 12 },
+  rarity: { marginTop: 1, color: C.baseContentFaint, fontSize: 10, textTransform: "capitalize", opacity: 0.8 },
 });

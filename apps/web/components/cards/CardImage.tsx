@@ -12,6 +12,10 @@ interface CardImageProps {
   priority?: boolean;
   className?: string;
   sizes?: string;
+  /** Test hook. The fallback gets `${testId}-fallback`. */
+  testId?: string;
+  /** Shown in place of the art when there is none. Defaults to the card name. */
+  fallbackLabel?: string;
 }
 
 /**
@@ -22,7 +26,15 @@ interface CardImageProps {
  * routing all of it through the Next optimizer would add cost and latency for
  * no visual gain.
  */
-export function CardImage({ src, name, priority, className, sizes }: CardImageProps) {
+export function CardImage({
+  src,
+  name,
+  priority,
+  className,
+  sizes,
+  testId,
+  fallbackLabel,
+}: CardImageProps) {
   const [state, setState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
 
   return (
@@ -33,6 +45,7 @@ export function CardImage({ src, name, priority, className, sizes }: CardImagePr
         <img
           src={src}
           alt={name}
+          data-testid={testId}
           sizes={sizes}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
@@ -47,9 +60,14 @@ export function CardImage({ src, name, priority, className, sizes }: CardImagePr
 
       {state === "error" && (
         // Named fallback: the user still learns which card this is.
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center"
+          data-testid={testId ? `${testId}-fallback` : undefined}
+        >
           <ImageOff className="h-5 w-5 text-faint" aria-hidden />
-          <span className="line-clamp-3 text-[0.6875rem] leading-tight text-faint">{name}</span>
+          <span className="line-clamp-3 text-[0.6875rem] leading-tight text-faint">
+            {fallbackLabel ?? name}
+          </span>
         </div>
       )}
     </div>

@@ -84,7 +84,7 @@ export const TCG_COLORS: Record<SupportedTcg, string> = {
 export const TCG_CATALOG_STATUS: Record<SupportedTcg, "live" | "planned"> = {
   pokemon: "live",
   magic: "live",
-  yugioh: "planned",
+  yugioh: "live",
   lorcana: "planned",
   onepiece: "planned",
   digimon: "planned",

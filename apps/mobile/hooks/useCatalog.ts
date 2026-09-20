@@ -1,16 +1,25 @@
 import { useMemo } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type { TcgSlug } from "@cardscan/types";
 import { api } from "@/services/api";
 import type { ListCardsParams } from "@/services/catalog";
 
 const CATALOG_STALE_TIME = 10 * 60 * 1000;
 
-export function useSets(tcg?: TcgSlug) {
+export function useTcgs() {
+  return useQuery({
+    queryKey: ["catalog", "tcgs"],
+    queryFn: () => api.catalog.listTcgs(),
+    staleTime: CATALOG_STALE_TIME,
+  });
+}
+
+export function useSets(tcg?: TcgSlug, enabled = true) {
   return useQuery({
     queryKey: ["catalog", "sets", tcg ?? "all"],
     queryFn: () => api.catalog.listSets(tcg),
     staleTime: CATALOG_STALE_TIME,
+    enabled,
   });
 }
 
@@ -21,6 +30,18 @@ export function useCards(params: ListCardsParams, enabled = true) {
     staleTime: CATALOG_STALE_TIME,
     placeholderData: keepPreviousData,
     enabled,
+  });
+}
+
+/** Infinite scroll: each page is fetched when the list reaches its end. */
+export function useInfiniteCards(filters: Omit<ListCardsParams, "page">) {
+  return useInfiniteQuery({
+    queryKey: ["catalog", "cards", "infinite", filters],
+    queryFn: ({ pageParam }) => api.catalog.listCards({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (last) =>
+      last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+    staleTime: CATALOG_STALE_TIME,
   });
 }
 

@@ -19,7 +19,7 @@ interface QuickAction {
 
 const QUICK_ACTIONS: QuickAction[] = [
   { label: "Scan cards", hint: "Identify a card", icon: "scan-outline", href: "/(tabs)/scan" },
-  { label: "Search", hint: "By name or set", icon: "search-outline", href: "/(tabs)/discover" },
+  { label: "Card database", hint: "Every card, searchable", icon: "albums-outline", href: "/cards" },
   {
     label: "Collection",
     hint: "Everything you own",

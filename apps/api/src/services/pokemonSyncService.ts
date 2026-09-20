@@ -14,8 +14,12 @@ const SET_FETCH_CONCURRENCY = 8;
  */
 const DEFAULT_VARIANT = "";
 
+/** Pokémon TCG Pocket is a digital-only game: its cards can never be physically scanned or collected. */
+const DIGITAL_ONLY_SERIES = new Set(["tcgp"]);
+
 export interface PokemonSyncResult {
   setsProcessed: number;
+  setsSkipped: number;
   setsFailed: number;
   cardsUpserted: number;
 }
@@ -32,11 +36,17 @@ export const syncPokemonCatalog = async (): Promise<PokemonSyncResult> => {
 
   let setsProcessed = 0;
   let setsFailed = 0;
+  let setsSkipped = 0;
   let cardsUpserted = 0;
 
   await mapWithConcurrency(sets, SET_FETCH_CONCURRENCY, async (setBrief, index) => {
     try {
       const detail = await fetchSetDetail(setBrief.id);
+
+      if (DIGITAL_ONLY_SERIES.has(detail.serie?.id)) {
+        setsSkipped++;
+        return;
+      }
 
       const symbolBase = detail.symbol ?? detail.logo ?? null;
 
@@ -99,5 +109,5 @@ export const syncPokemonCatalog = async (): Promise<PokemonSyncResult> => {
     }
   });
 
-  return { setsProcessed, setsFailed, cardsUpserted };
+  return { setsProcessed, setsSkipped, setsFailed, cardsUpserted };
 };
