@@ -1,7 +1,9 @@
 import axios from "axios";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import { discoverApiUrl } from "@/utils/discoverApi";
 
+/** Build-time default, used as the first guess before the network scan (see discoverApiUrl). */
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
@@ -30,5 +32,24 @@ apiClient.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  return config;
+});
+
+let currentApiUrl = API_URL;
+
+/**
+ * Locating the API is automatic: the app checks the address it used last, the one baked in at build
+ * time, and finally scans the local network. Requests wait for this the first time only.
+ */
+const discovery = discoverApiUrl(API_URL).then((found) => {
+  if (found) currentApiUrl = found;
+  return found;
+});
+
+export const getApiUrl = () => currentApiUrl;
+
+apiClient.interceptors.request.use(async (config) => {
+  await discovery;
+  config.baseURL = currentApiUrl;
   return config;
 });

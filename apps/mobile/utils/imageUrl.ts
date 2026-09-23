@@ -1,4 +1,4 @@
-import { API_URL } from "@/lib/api-client";
+import { getApiUrl } from "@/lib/api-client";
 
 /**
  * Card images that CardScan re-hosts (Yu-Gi-Oh!) are stored with the API's public URL from the
@@ -6,7 +6,7 @@ import { API_URL } from "@/lib/api-client";
  * "localhost" on the dev machine, so those URLs are re-pointed at the API host this app talks to.
  * Images on external CDNs (TCGdex, Scryfall) are returned untouched.
  */
-export const resolveImageUrl = (url: string | null | undefined, apiUrl: string = API_URL): string | null => {
+export const resolveImageUrl = (url: string | null | undefined, apiUrl: string = getApiUrl()): string | null => {
   if (!url) return null;
 
   const match = /^https?:\/\/[^/]+(\/assets\/.*)$/.exec(url);

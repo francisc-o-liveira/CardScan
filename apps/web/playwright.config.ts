@@ -15,7 +15,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3001",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -45,7 +45,7 @@ export default defineConfig({
     },
     {
       command: "pnpm --filter @cardscan/web dev",
-      url: "http://localhost:3000/login",
+      url: "http://localhost:3001/login",
       reuseExistingServer: true,
       timeout: 240_000,
     },

@@ -12,3 +12,8 @@ jest.mock("@expo/vector-icons", () => {
   const React = require("react");
   return { Ionicons: ({ name }: { name: string }) => React.createElement("Icon", { name }) };
 });
+
+// AsyncStorage needs its native module; the official mock keeps the saved server URL in memory.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);

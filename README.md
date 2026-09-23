@@ -81,7 +81,7 @@ pnpm sync:others    # Lorcana, One Piece, Digimon, Star Wars: Unlimited, Flesh a
 
 # 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100
-pnpm dev:web      # http://localhost:3000
+pnpm dev:web      # http://localhost:3001
 pnpm dev:mobile   # opens Expo dev tools
 ```
 
@@ -110,7 +110,7 @@ curl -X POST http://localhost:4100/api/auth/register \
   -d '{"email":"you@example.com","username":"you","password":"Password1"}'
 ```
 
-Or just open http://localhost:3000, register an account, and you'll land on the three welcome screens and then Home.
+Or just open http://localhost:3001, register an account, and you'll land on the three welcome screens and then Home.
 
 > The auth rate limiter allows 20 requests per 15 minutes per IP across `/auth/*`, and `/auth/refresh` counts — a hard page reload spends one. That's ample in normal use but easy to trip while developing.
 
