@@ -31,7 +31,8 @@
     "sync:starwars": "pnpm --filter @cardscan/api run sync:starwars",
     "sync:fab": "pnpm --filter @cardscan/api run sync:fab",
     "sync:others": "pnpm --filter @cardscan/api run sync:others",
-    "sync:all": "pnpm sync:pokemon && pnpm sync:magic && pnpm sync:yugioh && pnpm sync:others",
+    "sync:prices": "pnpm --filter @cardscan/api run sync:prices",
+    "sync:all":"pnpm sync:pokemon && pnpm sync:magic && pnpm sync:yugioh && pnpm sync:others",
     "build:apk": "pnpm --filter @cardscan/api exec tsx ../../scripts/build-apk.ts"
   },
   "devDependencies": {

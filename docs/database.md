@@ -10,13 +10,28 @@ PostgreSQL via Prisma. Schema: [`prisma/schema.prisma`](../prisma/schema.prisma)
 - **Wishlist / WishlistItem**
 - **Scan / RecognitionFeedback** — `RecognitionFeedback` records user corrections to a scan's predicted card, building a dataset for future recognition improvements.
 - **Deck / DeckItem**
-- **Price / PriceHistory** — `Price` is the latest snapshot per `(cardId, source)`; `PriceHistory` is an append-only time series.
+- **Price / PriceHistory** — `Price` is the latest snapshot per `(cardId, source, subType)` — `subType` is the finish ("Holofoil", "Reverse Holofoil", "1st Edition" …); `PriceHistory` is an append-only time series with one point per card, finish and day.
 
 All primary keys are UUIDs. Money fields use `Decimal(10,2)`, never `Float`.
 
 ## Why only User/Auth/Catalog tables are used right now
 
-Phase 1 implements the full schema up front (so later phases don't need destructive migrations) but only wires `User`, `RefreshToken`, `PasswordResetToken`, `Tcg`, `CardSet`, and `Card` into the API so far. `CollectionItem`, `WishlistItem`, `Scan`, `Deck`, `Price`, and `PriceHistory` exist with correct foreign keys and constraints, ready for their respective phases.
+Phase 1 implements the full schema up front (so later phases don't need destructive migrations) but only wires `User`, `RefreshToken`, `PasswordResetToken`, `Tcg`, `CardSet`, `Card`, `Price` and `PriceHistory` into the API so far. `CollectionItem`, `WishlistItem`, `Scan`, and `Deck` exist with correct foreign keys and constraints, ready for their respective phases.
+
+## TCGplayer prices
+
+`pnpm sync:prices [game|all] [--verbose]` (`apps/api/src/services/priceSyncService.ts`) reads TCGplayer's prices from [tcgcsv.com](https://tcgcsv.com), which republishes TCGplayer's catalog and price API as static JSON once a day (no key; override the base with `TCGPLAYER_PRICES_URL`). Per game it fetches TCGplayer's groups (sets), each group's products and prices, and matches them onto our catalog:
+
+- **Magic** matches exactly: Scryfall's bulk file carries each printing's TCGplayer `productId`.
+- **Every other game** matches a group to a set by code (where TCGplayer's abbreviations equal ours), by name with series prefixes read off (`SV03: Obsidian Flames`, `SM - Cosmic Eclipse`, `EX Emerald`, `XY Base Set` → `XY`), or through a small alias table for sets named too differently (`POKEMON_ALIASES`). A product then matches a card by collector number **only when the names agree too** (TCGplayer keeps a reprint's original number — the 30th Celebration Classic Collection's `Delcatty 5/109` — where we renumber), falling back to a name unique within the set. Anything ambiguous stays unpriced rather than guessed.
+- A card gets one row per finish; the API's `marketPrice` is the main finish's market price (reverse holos and Magic foils rank last). Each run replaces the game's prices in one transaction and rewrites the day's history point.
+- `--verbose` lists TCGplayer groups that matched no set and every match whose names differ, for review.
+
+**History.** `GET /api/cards/:id/price-history?range=1m|3m|6m|1y` returns each finish's daily market-price points in the range, with the change over the range and its low/high; the card page draws it as a chart next to the current price points. The history is our own — one point per card, finish and day, written by each sync — so it only exists from the first sync (2026-09-23) onward and only grows if the sync runs daily. There is no public source for older TCGplayer history: tcgcsv's daily price archive (from 2024-02-08) has been taken offline, and TCGplayer's own chart/sales-volume API is internal. Sales volume, listing quantity and seller counts aren't available at all.
+
+tcgcsv refreshes once a day and asks that each price file be requested at most once per 24 hours — run the sync daily, not more.
+
+Coverage on 2026-09-23: Pokémon 96.5% of cards, Lorcana 93%, Magic 89%, Star Wars 69%, One Piece 66%, Yu-Gi-Oh! 55%, Flesh and Blood 12%, Digimon 0%. Unpriced Pokémon cards are mostly trainer kits (TCGplayer sells both decks as one group with repeating numbers). Flesh and Blood stores several rows per collector number (edition/foiling), which the number+name matcher treats as ambiguous; Digimon's group names don't match ours yet — both need game-specific matching.
 
 ## Pokémon catalog sync
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { TcgSlug } from "@cardscan/types";
+import type { PriceHistoryRange, TcgSlug } from "@cardscan/types";
 import { api } from "@/services/api";
 import type { ListCardsParams } from "@/services/catalog";
 
@@ -14,6 +14,8 @@ export const catalogKeys = {
   set: (id: string) => ["catalog", "set", id] as const,
   cards: (params: ListCardsParams) => ["catalog", "cards", params] as const,
   card: (id: string) => ["catalog", "card", id] as const,
+  priceHistory: (id: string, range: PriceHistoryRange) =>
+    ["catalog", "card", id, "price-history", range] as const,
 };
 
 export function useTcgs() {
@@ -53,6 +55,17 @@ export function useCards(params: ListCardsParams, enabled = true) {
     staleTime: CATALOG_STALE_TIME,
     placeholderData: keepPreviousData,
     enabled,
+  });
+}
+
+/** Prices change once a day, so the history is cached like the rest of the catalog. */
+export function usePriceHistory(id: string | undefined, range: PriceHistoryRange) {
+  return useQuery({
+    queryKey: catalogKeys.priceHistory(id ?? "", range),
+    queryFn: () => api.catalog.getPriceHistory(id!, range),
+    staleTime: CATALOG_STALE_TIME,
+    placeholderData: keepPreviousData,
+    enabled: Boolean(id),
   });
 }
 

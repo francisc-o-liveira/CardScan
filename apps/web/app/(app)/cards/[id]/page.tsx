@@ -16,11 +16,13 @@ import {
   Share2,
 } from "lucide-react";
 import { LANGUAGE_LABELS } from "@cardscan/config";
-import type { TcgSlug } from "@cardscan/types";
+import type { CardPrice, TcgSlug } from "@cardscan/types";
+import { formatPrice } from "@/lib/format";
 import { PageShell } from "@/components/layout/PageShell";
 import { CardImage } from "@/components/cards/CardImage";
 import { CardLightbox } from "@/components/cards/CardLightbox";
 import { CardRail } from "@/components/cards/CardRail";
+import { PriceHistory } from "@/components/cards/PriceHistory";
 import { GameBadge, Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -46,6 +48,56 @@ function DetailRow({
       <dt className="w-28 shrink-0 text-meta text-muted">{label}</dt>
       <dd className="min-w-0 flex-1 text-meta font-medium text-base-content">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Every finish TCGplayer prices for this card. "Market" is TCGplayer's figure
+ * from recent completed sales; low/mid/high are current listings.
+ */
+function MarketPrices({ prices }: { prices: CardPrice[] }) {
+  return (
+    <section className="mt-9 max-w-lg">
+      <h2 className="text-section font-semibold">Market prices</h2>
+
+      {prices.length === 0 ? (
+        <div className="mt-3 flex items-start gap-3 text-meta text-muted">
+          <Coins className="mt-0.5 h-4 w-4 shrink-0 text-faint" aria-hidden />
+          <p>TCGplayer doesn&apos;t list a price for this card.</p>
+        </div>
+      ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-meta">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="py-2 pr-3 font-medium">Finish</th>
+                  <th className="py-2 pr-3 text-right font-medium">Market</th>
+                  <th className="py-2 pr-3 text-right font-medium">Low</th>
+                  <th className="py-2 pr-3 text-right font-medium">Mid</th>
+                  <th className="py-2 text-right font-medium">High</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[color:var(--border-hairline)] border-t border-[color:var(--border-hairline)]">
+                {prices.map((price) => (
+                  <tr key={price.subType} className="tabular-nums">
+                    <td className="py-2.5 pr-3 font-medium text-base-content">
+                      {price.subType || "Normal"}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right font-semibold text-base-content">
+                      {formatPrice(price.market, price.currency) ?? "—"}
+                    </td>
+                    {[price.low, price.mid, price.high].map((amount, i) => (
+                      <td key={i} className={`py-2.5 text-right text-muted ${i < 2 ? "pr-3" : ""}`}>
+                        {formatPrice(amount, price.currency) ?? "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+      )}
+    </section>
   );
 }
 
@@ -151,6 +203,18 @@ export default function CardDetailPage() {
                 {card.collectorNumber && ` · #${card.collectorNumber}`}
               </p>
 
+              {card.marketPrice && (
+                <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-title font-semibold tabular-nums tracking-tight">
+                    {formatPrice(card.marketPrice.amount, card.marketPrice.currency)}
+                  </span>
+                  <span className="text-meta text-muted">
+                    market price
+                    {card.marketPrice.subType && ` · ${card.marketPrice.subType}`}
+                  </span>
+                </p>
+              )}
+
               {/* One primary action, stated plainly. It is disabled rather than
                   hidden: the path has to be obvious now, and it only needs the
                   endpoint to work. */}
@@ -231,13 +295,15 @@ export default function CardDetailPage() {
                         : "English"
                     }
                   />
-                  {/* Future / Requires Backend Support: the Price table exists in
-                      the schema but no pricing source is wired up. */}
-                  <DetailRow icon={Coins} label="Market value" value="Not tracked yet" />
                 </dl>
               </section>
+
+              <MarketPrices prices={card.prices} />
+
             </div>
           </div>
+
+          <PriceHistory cardId={card.id} prices={card.prices} />
 
           {(related.isLoading || relatedCards.length > 0) && (
             <section className="mt-14">

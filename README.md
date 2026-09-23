@@ -14,7 +14,9 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 2's UI has landed.** The web and mobile clients were rebuilt around a shared design system, and the catalog is now browsable and searchable end to end — Discover, Search, set detail and card detail all read live data. See [`docs/design-system.md`](docs/design-system.md) for the visual system and the per-screen specification.
 
-Scanning/recognition, collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
+**Prices** come from TCGplayer via [tcgcsv.com](https://tcgcsv.com), a free, keyless daily mirror of TCGplayer's own catalog and price API: `pnpm sync:prices` stores each card's market/low/mid/high price per finish (Normal, Holofoil, Reverse Holofoil …) in USD, plus one market-price history point per day, and the web app shows them on card tiles and card detail (with a 1M/3M/6M/1Y price-history chart). Run it once a day — the history only grows from runs. See [`docs/database.md`](docs/database.md#tcgplayer-prices) for coverage per game.
+
+Scanning/recognition, collection, wishlist, and decks are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
 
 ## Tech stack
 
@@ -78,6 +80,7 @@ pnpm sync:yugioh    # from YGOPRODeck — downloads and re-hosts ~14.5k card ima
 pnpm sync:others    # Lorcana, One Piece, Digimon, Star Wars: Unlimited, Flesh and Blood — ~3 minutes
                     # (or each on its own: sync:lorcana | sync:onepiece | sync:digimon | sync:starwars | sync:fab)
                     # `pnpm sync:all` runs all eight games
+pnpm sync:prices    # TCGplayer prices for every imported game — ~2 minutes; run daily (or `sync:prices pokemon`)
 
 # 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100

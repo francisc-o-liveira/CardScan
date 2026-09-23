@@ -25,6 +25,8 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("https://raw.githubusercontent.com/the-fab-cube/flesh-and-blood-cards/develop/json/english"),
+  // Daily mirror of TCGplayer's catalog + market prices (https://tcgcsv.com)
+  TCGPLAYER_PRICES_URL: z.string().min(1).default("https://tcgcsv.com/tcgplayer"),
   ASSETS_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage")),
   API_PUBLIC_URL: z.string().min(1).default("http://localhost:4100"),
 });

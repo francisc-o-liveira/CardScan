@@ -317,20 +317,28 @@ model DeckItem {
 // Pricing
 // ---------------------------------------------------------------------------
 
-/// Current best-known price snapshot per (card, source).
+/// Current best-known price snapshot per (card, source, finish).
+///
+/// `subType` is the source's finish/printing label — TCGplayer prices "Normal",
+/// "Holofoil", "Reverse Holofoil", "1st Edition" … separately — and "" when the
+/// source has a single price per card. `externalId` is the source's product id
+/// (TCGplayer productId), used to link to the listing.
 model Price {
-  id        String   @id @default(uuid())
-  cardId    String
-  source    String
-  low       Decimal? @db.Decimal(10, 2)
-  average   Decimal? @db.Decimal(10, 2)
-  high      Decimal? @db.Decimal(10, 2)
-  currency  String   @default("EUR")
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  cardId     String
+  source     String
+  subType    String   @default("")
+  low        Decimal? @db.Decimal(10, 2)
+  average    Decimal? @db.Decimal(10, 2)
+  high       Decimal? @db.Decimal(10, 2)
+  market     Decimal? @db.Decimal(10, 2)
+  currency   String   @default("EUR")
+  externalId String?
+  updatedAt  DateTime @updatedAt
 
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
-  @@unique([cardId, source])
+  @@unique([cardId, source, subType])
   @@map("prices")
 }
 
@@ -338,6 +346,7 @@ model PriceHistory {
   id         String   @id @default(uuid())
   cardId     String
   source     String
+  subType    String   @default("")
   price      Decimal  @db.Decimal(10, 2)
   currency   String   @default("EUR")
   recordedAt DateTime @default(now())

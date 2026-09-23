@@ -44,6 +44,8 @@ export interface ScryfallCard {
   layout: string;
   image_uris?: ScryfallImageUris;
   card_faces?: ScryfallCardFace[];
+  /** This printing's TCGplayer productId — absent for cards TCGplayer doesn't sell. */
+  tcgplayer_id?: number;
 }
 
 export interface ScryfallBulkDataEntry {

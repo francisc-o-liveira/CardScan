@@ -5,6 +5,7 @@ import { TCG_COLORS } from "@cardscan/config";
 import type { TcgSlug } from "@cardscan/types";
 import { CardImage } from "./CardImage";
 import { cn } from "@/lib/cn";
+import { formatPrice } from "@/lib/format";
 
 /**
  * Only the fields the tile actually draws. Declaring them structurally lets it
@@ -19,6 +20,7 @@ export interface CardTileCard {
   imageUrl: string | null;
   set?: { name: string } | null;
   tcg?: { slug: TcgSlug } | null;
+  marketPrice?: { amount: number; currency: string } | null;
 }
 
 interface CardTileProps {
@@ -47,7 +49,7 @@ interface CardTileProps {
  * The card grid's atom, and the app's most repeated component.
  *
  * Artwork gets ~85% of the tile; text is compact metadata beneath it. Only
- * three facts show at rest (name, set, number) — everything else lives on the
+ * four facts show at rest (name, set, number, market price) — everything else lives on the
  * detail screen, per the progressive-disclosure rule.
  */
 export function CardTile({
@@ -64,6 +66,9 @@ export function CardTile({
   const meta = [showSet ? card.set?.name : null, card.collectorNumber]
     .filter(Boolean)
     .join(" \u00B7 ");
+  const price = card.marketPrice
+    ? formatPrice(card.marketPrice.amount, card.marketPrice.currency)
+    : null;
 
   const content = (
     <>
@@ -108,7 +113,19 @@ export function CardTile({
         >
           {card.name}
         </p>
-        {meta && <p className="truncate text-[0.75rem] text-faint">{meta}</p>}
+        {(meta || price) && (
+          <div className="flex items-baseline gap-2 text-[0.75rem]">
+            <p className="min-w-0 flex-1 truncate text-faint">{meta}</p>
+            {price && (
+              <p
+                className="shrink-0 font-semibold tabular-nums text-base-content"
+                title="TCGplayer market price"
+              >
+                {price}
+              </p>
+            )}
+          </div>
+        )}
         {showRarity && card.rarity && (
           <p className="truncate text-[0.75rem] capitalize text-faint/80">{card.rarity}</p>
         )}

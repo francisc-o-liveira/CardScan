@@ -1,8 +1,6 @@
-import zlib from "node:zlib";
-import readline from "node:readline";
-import axios from "axios";
 import { prisma } from "../config/prisma";
-import { fetchSets, fetchDefaultCardsDownloadUrl, SCRYFALL_USER_AGENT } from "../providers/magic/scryfallClient";
+import { fetchSets } from "../providers/magic/scryfallClient";
+import { streamDefaultCards } from "../providers/magic/bulkCards";
 import { getCardImageUrl } from "../providers/magic/image";
 import type { ScryfallCard } from "../providers/magic/scryfall.types";
 
@@ -53,16 +51,7 @@ export const syncMagicCatalog = async (): Promise<MagicSyncResult> => {
   }
   console.log(`[magic-sync] Synced ${sets.length} sets`);
 
-  const downloadUrl = await fetchDefaultCardsDownloadUrl();
-  console.log(`[magic-sync] Streaming bulk card data from ${downloadUrl}`);
-
-  const response = await axios.get<NodeJS.ReadableStream>(downloadUrl, {
-    responseType: "stream",
-    headers: { "User-Agent": SCRYFALL_USER_AGENT },
-    timeout: 0,
-  });
-
-  const rl = readline.createInterface({ input: response.data.pipe(zlib.createGunzip()) });
+  console.log("[magic-sync] Streaming Scryfall's default_cards bulk file");
 
   let cardsUpserted = 0;
   let cardsSkipped = 0;
@@ -111,11 +100,7 @@ export const syncMagicCatalog = async (): Promise<MagicSyncResult> => {
     }
   };
 
-  for await (const line of rl) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const card = JSON.parse(trimmed) as ScryfallCard;
+  for await (const card of streamDefaultCards()) {
     // Arena/MTGO-only digital objects can never be physically scanned or collected — out of scope.
     if (card.digital) {
       cardsSkipped++;

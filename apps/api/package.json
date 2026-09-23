@@ -18,7 +18,8 @@
     "sync:digimon": "tsx src/scripts/syncCatalog.ts digimon",
     "sync:starwars": "tsx src/scripts/syncCatalog.ts starwars",
     "sync:fab": "tsx src/scripts/syncCatalog.ts fab",
-    "sync:others": "tsx src/scripts/syncCatalog.ts all"
+    "sync:others": "tsx src/scripts/syncCatalog.ts all",
+    "sync:prices": "tsx src/scripts/syncPrices.ts"
   },
   "dependencies": {
     "@cardscan/config": "workspace:*",

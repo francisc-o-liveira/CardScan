@@ -1,6 +1,9 @@
 import type {
   ApiResponse,
+  CardPrice,
+  CardPriceHistory,
   CatalogCard,
+  PriceHistoryRange,
   CatalogSet,
   CatalogTcg,
   PaginatedResponse,
@@ -27,6 +30,7 @@ export interface CatalogCardDetail extends CatalogCard {
   set: CatalogSet;
   tcg: CatalogTcg;
   variants: CatalogCardVariant[];
+  prices: CardPrice[];
 }
 
 export interface CatalogSetDetail extends CatalogSet {
@@ -73,6 +77,14 @@ export const catalogApi = {
         Object.entries(params).filter(([, value]) => value !== undefined && value !== ""),
       ),
     });
+    return unwrap(data);
+  },
+
+  async getPriceHistory(id: string, range: PriceHistoryRange): Promise<CardPriceHistory> {
+    const { data } = await apiClient.get<ApiResponse<CardPriceHistory>>(
+      `/cards/${id}/price-history`,
+      { params: { range } },
+    );
     return unwrap(data);
   },
 
