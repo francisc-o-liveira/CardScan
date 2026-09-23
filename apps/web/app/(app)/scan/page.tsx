@@ -1,82 +1,155 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, ChevronRight, SearchX } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle2, ScanLine, Search, SearchX } from "lucide-react";
 import { LIVE_TCGS } from "@cardscan/config";
+import type { CatalogCard, Scan } from "@cardscan/types";
 import { PageShell, PageHeader } from "@/components/layout/PageShell";
-import { ScanFrame } from "@/components/scan/ScanFrame";
+import { Viewfinder } from "@/components/scan/Viewfinder";
+import { ScanResult } from "@/components/scan/ScanResult";
 import { SearchField } from "@/components/ui/SearchField";
 import { GameSwitcher, type GameFilter } from "@/components/ui/GameSwitcher";
-import { CardImage } from "@/components/cards/CardImage";
-import { GameBadge } from "@/components/ui/Badge";
+import { CardRow } from "@/components/cards/CardRow";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCards } from "@/hooks/useCatalog";
+import { useCreateScan, useConfirmScan } from "@/hooks/useScans";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { CAPABILITIES } from "@/lib/features";
-import type { TcgSlug } from "@cardscan/types";
+import { getErrorMessage } from "@/lib/api-error";
 
 /**
- * Identify a card.
- *
- * Camera recognition needs a /scans endpoint and a recognition model, neither
- * of which exists yet (Future / Requires Backend Support — the full capture →
- * confirm → next flow is specified in docs/design-system.md).
- *
- * So this screen ships the other half of the same job and ships it working:
- * type a name, see the real card with its artwork, open it. The destination —
- * "I found my card" — is identical, which means the flow, the copy and the
- * result layout are all already in place when the camera arrives.
+ * Identify a card: point the camera at it, or find it by name. Batch-friendly, as docs/design-system.md
+ * asks: scan, confirm, and the viewfinder re-arms on the same screen for the next card. Every confirmation
+ * (including a card picked by name after "Enter manually") is recorded against the scan as feedback.
  */
 export default function ScanPage() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [game, setGame] = useState<GameFilter>("all");
+  const [scan, setScan] = useState<Scan | null>(null);
+  /** The scan waiting for the user to find its card by name, after "Enter manually". */
+  const [manualFor, setManualFor] = useState<string | null>(null);
+  const [recorded, setRecorded] = useState<CatalogCard | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+
+  const createScan = useCreateScan();
+  const confirmScan = useConfirmScan();
 
   const debounced = useDebouncedValue(query);
   const hasQuery = debounced.trim().length >= 2;
-
   const { data, isLoading, isFetching, isError, refetch } = useCards(
-    {
-      query: debounced.trim(),
-      tcg: game === "all" ? undefined : game,
-      limit: 8,
-    },
+    { query: debounced.trim(), tcg: game === "all" ? undefined : game, limit: 8 },
     hasQuery,
   );
-
   const matches = data?.data ?? [];
+
+  const rearm = () => {
+    setScan(null);
+    setManualFor(null);
+    createScan.reset();
+  };
+
+  const capture = (photo: Blob) => {
+    setRecorded(null);
+    rearm();
+    createScan.mutate(photo, { onSuccess: setScan });
+  };
+
+  const confirm = (card: CatalogCard) => {
+    const scanId = scan?.id ?? manualFor;
+    if (!scanId) {
+      router.push(`/cards/${card.id}`);
+      return;
+    }
+    confirmScan.mutate(
+      { scanId, cardId: card.id },
+      {
+        onSuccess: () => {
+          setRecorded(card);
+          setQuery("");
+          rearm();
+        },
+      },
+    );
+  };
+
+  const enterManually = () => {
+    setManualFor(scan?.id ?? null);
+    setScan(null);
+    createScan.reset();
+    searchInput.current?.focus();
+  };
 
   return (
     <PageShell width="narrow">
-      <PageHeader
-        title="Identify a card"
-        description="Find any card in the catalog, or scan one with your camera once that ships."
-      />
+      <PageHeader title="Identify a card" description="Point your camera at a card, or find it by name." />
 
-      <ScanFrame
-        caption={
-          CAPABILITIES.scanning
-            ? "Position your card inside the frame"
-            : "Camera scanning is in development"
-        }
-      >
-        {!CAPABILITIES.scanning && (
-          <div className="flex flex-col items-center gap-2 text-center">
-            <Camera className="h-7 w-7 text-white/35" aria-hidden />
-            <span className="text-meta text-white/45">Coming soon</span>
+      <div className="flex flex-col gap-3">
+        {recorded && (
+          <div className="flex items-center gap-2.5 rounded-panel border border-success/25 bg-success/10 px-4 py-3">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-success" aria-hidden />
+            <p className="min-w-0 flex-1 truncate text-body font-medium">{recorded.name} recorded</p>
+            <Link href={`/cards/${recorded.id}`} className="shrink-0 text-meta font-semibold text-primary hover:underline">
+              View card
+            </Link>
           </div>
         )}
-      </ScanFrame>
 
-      {/* The working path, given the same weight the camera will have. */}
+        {createScan.isError ? (
+          <EmptyState
+            icon={AlertCircle}
+            title="We couldn't identify that card"
+            description={getErrorMessage(createScan.error, "Try better lighting, or the card fully inside the frame.")}
+            action={
+              <Button variant="primary" size="lg" onClick={rearm}>
+                <ScanLine className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                Try again
+              </Button>
+            }
+            secondaryAction={
+              <Button variant="outline" size="lg" onClick={enterManually}>
+                <Search className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                Enter manually
+              </Button>
+            }
+          />
+        ) : scan ? (
+          <ScanResult
+            scan={scan}
+            confirming={confirmScan.isPending}
+            onConfirm={confirm}
+            onRetry={rearm}
+            onEnterManually={enterManually}
+          />
+        ) : (
+          <Viewfinder busy={createScan.isPending} onCapture={capture} />
+        )}
+      </div>
+
       <section className="mt-8" aria-labelledby="find-by-name">
         <h2 id="find-by-name" className="mb-3 text-section font-semibold">
           Find it by name
         </h2>
 
+        {manualFor && (
+          <div className="mb-3 flex items-center gap-2 rounded-panel bg-primary/10 px-4 py-3">
+            <p className="flex-1 text-meta">Search for the card you scanned, then select it.</p>
+            <button
+              type="button"
+              onClick={() => setManualFor(null)}
+              className="text-meta font-semibold text-primary hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <SearchField
+          ref={searchInput}
           size="lg"
           label="Find a card by name"
           placeholder="Type a card name, like Charizard"
@@ -90,11 +163,7 @@ export default function ScanPage() {
         </div>
 
         <div className="mt-6">
-          {!hasQuery && (
-            <p className="text-meta text-faint">
-              Start typing to search 130,000+ Pokémon and Magic cards.
-            </p>
-          )}
+          {!hasQuery && <p className="text-meta text-faint">Start typing to search 130,000+ Pokémon and Magic cards.</p>}
 
           {hasQuery && isLoading && (
             <ul className="flex flex-col gap-2">
@@ -127,32 +196,7 @@ export default function ScanPage() {
             <ul className="flex flex-col gap-2">
               {matches.map((card) => (
                 <li key={card.id}>
-                  <Link
-                    href={`/cards/${card.id}`}
-                    className="group flex items-center gap-3.5 rounded-panel border border-hairline bg-base-200 p-3 shadow-sheen transition-colors duration-fast hover:border-strong hover:bg-base-300"
-                  >
-                    <div className="w-[3.25rem] shrink-0 overflow-hidden rounded-md shadow-sm">
-                      <CardImage src={card.imageUrl} name={card.name} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-body font-medium transition-colors duration-fast group-hover:text-primary">
-                        {card.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-meta text-faint">
-                        {card.set?.name}
-                        {card.collectorNumber && ` · #${card.collectorNumber}`}
-                      </p>
-                      {card.tcg?.slug && (
-                        <span className="mt-1.5 inline-block">
-                          <GameBadge tcg={card.tcg.slug as TcgSlug} size="sm" />
-                        </span>
-                      )}
-                    </div>
-                    <ChevronRight
-                      className="h-4 w-4 shrink-0 text-faint transition-transform duration-fast group-hover:translate-x-0.5"
-                      aria-hidden
-                    />
-                  </Link>
+                  <CardRow card={card} onSelect={() => confirm(card)} />
                 </li>
               ))}
             </ul>

@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { Pressable, Text, StyleSheet, ActivityIndicator, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { C, R, T, MIN_TOUCH } from "@/theme";
+import { R, T, MIN_TOUCH, type Palette } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -14,12 +16,12 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-const TEXT_COLOR: Record<Variant, string> = {
+const textColors = (C: Palette): Record<Variant, string> => ({
   primary: C.primaryContent,
   secondary: C.baseContent,
   ghost: C.baseContentMuted,
   danger: C.error,
-};
+});
 
 /**
  * The app's only button, mirroring the web variants so the action hierarchy
@@ -33,6 +35,9 @@ export function Button({
   isLoading,
   disabled,
 }: ButtonProps): ReactNode {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
+  const textColor = textColors(C)[variant];
   const isDisabled = disabled || isLoading;
 
   return (
@@ -50,17 +55,17 @@ export function Button({
     >
       <View style={styles.inner}>
         {isLoading ? (
-          <ActivityIndicator size="small" color={TEXT_COLOR[variant]} />
+          <ActivityIndicator size="small" color={textColor} />
         ) : icon ? (
-          <Ionicons name={icon} size={18} color={TEXT_COLOR[variant]} />
+          <Ionicons name={icon} size={18} color={textColor} />
         ) : null}
-        <Text style={[styles.label, { color: TEXT_COLOR[variant] }]}>{label}</Text>
+        <Text style={[styles.label, { color: textColor }]}>{label}</Text>
       </View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (C: Palette) => StyleSheet.create({
   base: {
     minHeight: MIN_TOUCH,
     borderRadius: R.md,
@@ -73,7 +78,7 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: C.primary, borderColor: C.primary },
   secondary: { backgroundColor: C.base300, borderColor: C.border },
   ghost: { backgroundColor: "transparent", borderColor: "transparent" },
-  danger: { backgroundColor: "transparent", borderColor: "rgba(251,113,133,0.35)" },
+  danger: { backgroundColor: "transparent", borderColor: `${C.error}59` },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.45 },
 });

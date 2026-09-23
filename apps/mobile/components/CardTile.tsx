@@ -1,8 +1,10 @@
-import { memo, useState } from "react";
+import { memo, useState, useMemo } from "react";
 import { View, Text, Image, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { resolveImageUrl } from "@/utils/imageUrl";
-import { C, R, T, CARD_ASPECT } from "@/theme";
+import { useImageRetry } from "@/hooks/useImageRetry";
+import { R, T, CARD_ASPECT, type Palette } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 
 /**
  * Only the fields the tile draws. Declaring them structurally lets it take a
@@ -38,8 +40,10 @@ function CardTileComponent({
   showRarity = true,
   onPress,
 }: CardTileProps) {
-  const [imageFailed, setImageFailed] = useState(false);
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const uri = resolveImageUrl(card.imageUrl);
+  const { attempt, failed: imageFailed, onError: onImageError } = useImageRetry(uri);
   const showImage = Boolean(uri) && !imageFailed;
   const setName = card.set?.name ?? "Unknown set";
 
@@ -64,13 +68,14 @@ function CardTileComponent({
       >
         {showImage ? (
           <Image
+            key={attempt}
             source={{ uri: uri as string }}
             style={styles.image}
             resizeMode="cover"
             accessible
             accessibilityLabel={card.name}
             testID="card-image"
-            onError={() => setImageFailed(true)}
+            onError={onImageError}
           />
         ) : (
           <View style={styles.fallback} testID="card-image-fallback">
@@ -104,7 +109,7 @@ function CardTileComponent({
 
 export const CardTile = memo(CardTileComponent);
 
-const styles = StyleSheet.create({
+const createStyles = (C: Palette) => StyleSheet.create({
   fluid: { flex: 1, padding: 6 },
   pressed: { opacity: 0.8 },
   frame: {

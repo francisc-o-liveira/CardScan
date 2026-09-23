@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { IMAGE_MAX_RETRIES, IMAGE_RETRY_DELAY_MS } from "@/hooks/useImageRetry";
 import { CardTile } from "@/components/CardTile";
 import { makeCard } from "./factories";
 
@@ -32,11 +33,23 @@ describe("<CardTile />", () => {
     expect(screen.getByText("No image")).toBeTruthy();
   });
 
-  it("falls back to the placeholder when the image fails to load", async () => {
+  it("retries a failed image before falling back to the placeholder", async () => {
+    jest.useFakeTimers();
     await render(<CardTile card={makeCard()} />);
+
+    for (let retry = 0; retry < IMAGE_MAX_RETRIES; retry++) {
+      await fireEvent(screen.getByTestId("card-image"), "error");
+      // Still showing the image while a retry is pending.
+      expect(screen.queryByTestId("card-image-fallback")).toBeNull();
+      await act(async () => {
+        jest.advanceTimersByTime(IMAGE_RETRY_DELAY_MS);
+      });
+    }
+
     await fireEvent(screen.getByTestId("card-image"), "error");
     expect(screen.queryByTestId("card-image")).toBeNull();
     expect(screen.getByTestId("card-image-fallback")).toBeTruthy();
+    jest.useRealTimers();
   });
 
   it("points re-hosted images at the API host instead of localhost", async () => {

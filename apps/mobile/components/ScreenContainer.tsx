@@ -1,10 +1,14 @@
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { C, S, T } from "@/theme";
+import { S, T, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
+import { AppHeader } from "@/components/AppHeader";
 
 interface ScreenContainerProps {
-  title: string;
+  /** Omit on screens that open straight onto content, like Home. */
+  title?: string;
   /** One line under the title saying what the screen is for. */
   description?: string;
   /** Wraps children in a ScrollView. Off for screens that own their own list. */
@@ -21,12 +25,18 @@ export function ScreenContainer({
   headerAccessory,
   children,
 }: ScreenContainerProps) {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const body = (
     <>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {description ? <Text style={styles.description}>{description}</Text> : null}
-      </View>
+      {title ? (
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          {description ? <Text style={styles.description}>{description}</Text> : null}
+        </View>
+      ) : (
+        <View style={styles.headerGap} />
+      )}
       {headerAccessory}
       {children}
     </>
@@ -34,6 +44,7 @@ export function ScreenContainer({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <AppHeader />
       {scroll ? (
         <ScrollView
           style={styles.flex}
@@ -50,12 +61,13 @@ export function ScreenContainer({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (C: Palette) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.base100 },
   flex: { flex: 1 },
   // Bottom padding clears the tab bar.
   scrollContent: { paddingBottom: 96 },
-  header: { paddingHorizontal: S.xl, paddingTop: S.md, paddingBottom: S.lg },
+  headerGap: { height: 20 },
+  header: { paddingHorizontal: GUTTER, paddingTop: S.md, paddingBottom: S.lg },
   title: {
     fontSize: T.title,
     fontWeight: "700",

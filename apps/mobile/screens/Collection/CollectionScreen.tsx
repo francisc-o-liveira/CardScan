@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { C, S, T } from "@/theme";
+import { S, T, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
@@ -11,13 +13,15 @@ import { Button } from "@/components/Button";
  * rather than a search bar and filters over nothing.
  */
 export function CollectionScreen() {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <ScreenContainer title="My collection">
       <View style={styles.body}>
         <EmptyState
           icon="layers-outline"
           title="Your collection is empty"
-          description="Scan a card to add your first one. Quantities, condition and sets are all tracked here."
+          description="Scan a card to add your first one. Everything you own — quantities, condition and sets — is tracked here."
           action={
             <Button
               label="Scan your first card"
@@ -43,8 +47,8 @@ export function CollectionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { paddingHorizontal: S.xl },
+const createStyles = (C: Palette) => StyleSheet.create({
+  body: { paddingHorizontal: GUTTER },
   note: {
     marginTop: 14,
     color: C.baseContentFaint,

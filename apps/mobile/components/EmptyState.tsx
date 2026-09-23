@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { C, R, S, T } from "@/theme";
+import { R, S, T, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 
 interface EmptyStateProps {
   icon: ComponentProps<typeof Ionicons>["name"];
@@ -21,6 +23,8 @@ export function EmptyState({
   action,
   secondaryAction,
 }: EmptyStateProps) {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.container}>
       <View style={styles.iconBadge}>
@@ -38,14 +42,14 @@ export function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (C: Palette) => StyleSheet.create({
   container: {
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: C.border,
     borderRadius: R.xl,
     paddingVertical: 44,
-    paddingHorizontal: S.xl,
+    paddingHorizontal: GUTTER,
     alignItems: "center",
     gap: 10,
   },

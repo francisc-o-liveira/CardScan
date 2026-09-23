@@ -11,6 +11,25 @@ import { apiClient } from "@/lib/api-client";
 /** Shared with web and the API through @cardscan/types, so shapes can't drift. */
 export type { CatalogCard, CatalogSet, CatalogTcg };
 
+export interface CatalogCardVariant {
+  id: string;
+  cardId: string;
+  language: string;
+  name: string;
+  imageUrl: string | null;
+}
+
+export interface CatalogCardDetail extends CatalogCard {
+  set: CatalogSet;
+  tcg: CatalogTcg;
+  variants: CatalogCardVariant[];
+}
+
+export interface CatalogSetDetail extends CatalogSet {
+  tcg: CatalogTcg;
+  cards: CatalogCard[];
+}
+
 export interface ListCardsParams {
   query?: string;
   tcg?: TcgSlug;
@@ -33,6 +52,14 @@ export const catalogApi = {
     const { data } = await apiClient.get<ApiResponse<CatalogSet[]>>("/sets", {
       params: tcg ? { tcg } : undefined,
     });
+    return unwrap(data);
+  },
+  getSet: async (id: string): Promise<CatalogSetDetail> => {
+    const { data } = await apiClient.get<ApiResponse<CatalogSetDetail>>(`/sets/${id}`);
+    return unwrap(data);
+  },
+  getCard: async (id: string): Promise<CatalogCardDetail> => {
+    const { data } = await apiClient.get<ApiResponse<CatalogCardDetail>>(`/cards/${id}`);
     return unwrap(data);
   },
   listCards: async (params: ListCardsParams): Promise<PaginatedResponse<CatalogCard>> => {

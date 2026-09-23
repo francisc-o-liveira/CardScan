@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { ScrollView, Pressable, Text, View, StyleSheet } from "react-native";
 import { TCG_COLORS, TCG_SHORT_LABELS } from "@cardscan/config";
 import type { TcgSlug } from "@cardscan/types";
-import { C, R, S, T, MIN_TOUCH } from "@/theme";
+import { R, S, T, MIN_TOUCH, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 
 export type GameFilter = TcgSlug | "all";
 
@@ -18,6 +20,8 @@ export function GameSwitcher({
   onChange: (value: GameFilter) => void;
   games: readonly TcgSlug[];
 }) {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const options: GameFilter[] = ["all", ...games];
 
   return (
@@ -68,8 +72,8 @@ export function GameSwitcher({
   );
 }
 
-const styles = StyleSheet.create({
-  row: { paddingHorizontal: S.xl, gap: 8, paddingBottom: 4 },
+const createStyles = (C: Palette) => StyleSheet.create({
+  row: { paddingHorizontal: GUTTER, gap: 8, paddingBottom: 4 },
   chip: {
     minHeight: MIN_TOUCH - 6,
     flexDirection: "row",

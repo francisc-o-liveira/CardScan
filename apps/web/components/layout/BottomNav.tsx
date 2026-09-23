@@ -32,18 +32,22 @@ export function BottomNav() {
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
-                  className="group flex min-h-touch flex-col items-center justify-center gap-1 px-2 pb-1.5 pt-2"
+                  className="group flex min-h-touch flex-col items-center justify-center gap-1 px-2 pb-1.5 pt-2.5"
                 >
-                  <span
-                    className={cn(
-                      "flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-content shadow-md transition-transform duration-fast ease-spring",
-                      "motion-safe:group-active:scale-90",
-                      active && "ring-2 ring-primary/35 ring-offset-2 ring-offset-base-100",
-                    )}
-                  >
-                    <Icon className="h-5 w-5" aria-hidden />
+                  {/* Same footprint as the other tabs' icons so the label shares their baseline; the
+                      button is drawn larger and lifted above the bar, ringed in the bar colour. */}
+                  <span className="relative h-[1.3rem] w-14">
+                    <span
+                      className={cn(
+                        "absolute -top-7 left-0 flex h-14 w-14 items-center justify-center rounded-[20px] bg-primary text-primary-content shadow-lg ring-4 ring-base-100 transition-transform duration-fast ease-spring",
+                        "motion-safe:group-active:scale-90",
+                        active && "brightness-110",
+                      )}
+                    >
+                      <Icon className="h-6 w-6" aria-hidden />
+                    </span>
                   </span>
-                  <span className="text-[0.6875rem] font-medium text-primary">{item.label}</span>
+                  <span className="mt-2 text-[0.6875rem] font-bold text-primary">{item.label}</span>
                 </Link>
               </li>
             );

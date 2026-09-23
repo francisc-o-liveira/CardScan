@@ -77,6 +77,17 @@ const openFirewall = (): void => {
   );
 };
 
+/** Cards already imported, or 0 when the table is empty or unreachable. */
+const countCards = (): number => {
+  const result = spawnSync(
+    "docker",
+    ["exec", "cardscan-postgres", "psql", "-U", "cardscan", "-d", "cardscan", "-tAc", "select count(*) from cards"],
+    // No shell: the SQL contains spaces, and cmd.exe would split it into separate arguments.
+    { encoding: "utf8" },
+  );
+  return Number.parseInt(result.stdout?.trim() ?? "", 10) || 0;
+};
+
 const prepareStack = (): void => {
   if (!fs.existsSync(path.join(ROOT, ".env"))) {
     fs.copyFileSync(path.join(ROOT, ".env.example"), path.join(ROOT, ".env"));
@@ -88,6 +99,12 @@ const prepareStack = (): void => {
   step("Starting Postgres + Redis", "pnpm", ["docker:up"]);
   waitForPostgres();
   step("Applying database migrations", "pnpm", ["exec", "dotenv", "-e", ".env", "--", "prisma", "migrate", "deploy", "--schema=prisma/schema.prisma"]);
+
+  // Without a catalog the app opens onto empty screens, so import Pokémon (seconds) and Magic (minutes).
+  if (countCards() === 0) {
+    step("Importing the Pokémon catalog", "pnpm", ["--filter", "@cardscan/api", "sync:pokemon"]);
+    step("Importing the Magic catalog (a few minutes)", "pnpm", ["--filter", "@cardscan/api", "sync:magic"]);
+  }
   openFirewall();
 };
 

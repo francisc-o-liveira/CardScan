@@ -14,9 +14,11 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 2's UI has landed.** The web and mobile clients were rebuilt around a shared design system, and the catalog is now browsable and searchable end to end — Discover, Search, set detail and card detail all read live data. See [`docs/design-system.md`](docs/design-system.md) for the visual system and the per-screen specification.
 
+**Phase 3, the scanner, has landed.** Point the camera at a card on web or mobile and CardScan recognises it against the imported catalog, locally and in TypeScript — see [`docs/recognition.md`](docs/recognition.md). Build the index once with `pnpm recognition:index`.
+
 **Prices** come from TCGplayer via [tcgcsv.com](https://tcgcsv.com), a free, keyless daily mirror of TCGplayer's own catalog and price API: `pnpm sync:prices` stores each card's market/low/mid/high price per finish (Normal, Holofoil, Reverse Holofoil …) in USD, plus one market-price history point per day, and the web app shows them on card tiles and card detail (with a 1M/3M/6M/1Y price-history chart). Run it once a day — the history only grows from runs. See [`docs/database.md`](docs/database.md#tcgplayer-prices) for coverage per game.
 
-Scanning/recognition, collection, wishlist, and decks are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
+Collection, wishlist, and decks are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
 
 ## Tech stack
 
@@ -141,6 +143,8 @@ pnpm docker:down   # stop them
 | `pnpm sync:yugioh`     | Import the Yu-Gi-Oh! catalog from YGOPRODeck and re-host its images |
 | `pnpm sync:others`     | Import Lorcana, One Piece, Digimon, Star Wars: Unlimited and Flesh and Blood (see docs/database.md) |
 | `pnpm sync:all`        | Import all eight games |
+| `pnpm recognition:index` | Build the card recognition index from the imported catalog (resumable) — see [docs/recognition.md](docs/recognition.md) |
+| `pnpm recognition:eval`  | Measure recognition accuracy on simulated phone photos |
 | `pnpm test`            | Run validation, API (real Postgres) and web tests — see [docs/testing.md](docs/testing.md) |
 | `pnpm test:e2e`        | Run the Playwright browser tests (cards + images loading end-to-end) |
 | `pnpm test:e2e:mobile` | Run the mobile app (Expo web build) in a browser against the real API |
@@ -151,7 +155,7 @@ Built in phases — see [`docs/architecture.md`](docs/architecture.md) for detai
 
 1. **Foundation** — monorepo, auth, DB schema, web/mobile shell
 2. **Card database** — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`), Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) and Yu-Gi-Oh! ([YGOPRODeck](https://ygoprodeck.com/api-guide/), `pnpm sync:yugioh`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`) and a full browse/search UI on web and mobile
-3. **Scanner** — camera capture, recognition pipeline, confidence scoring
+3. **Scanner** — camera capture on web and mobile, a local recognition pipeline (card detection, visual matching, confidence), scan history and correction feedback (`pnpm recognition:index`)
 4. **Collection** — add/remove cards, quantities, conditions, statistics
 5. **Wishlist**
 6. **Pricing** — price providers, history, collection valuation

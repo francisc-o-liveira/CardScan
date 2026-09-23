@@ -35,9 +35,9 @@ const FAQS: Faq[] = [
     ),
   },
   {
-    question: "When can I scan a card with my camera?",
+    question: "How does scanning work?",
     answer:
-      "Camera recognition is in development. Until then, the Scan screen finds any card by name in a couple of keystrokes — the same destination, without the camera.",
+      "Open Scan and hold the card inside the frame. CardScan compares the photo with every card in the catalog and shows the best match; when it isn't sure, it asks you to pick. Each scan, and any correction you make, is kept in Scan history.",
   },
   {
     question: "Why is my collection empty?",

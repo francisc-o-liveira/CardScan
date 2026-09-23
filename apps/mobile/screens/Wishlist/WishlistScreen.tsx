@@ -1,12 +1,16 @@
-import { View, StyleSheet } from "react-native";
+import { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { S } from "@/theme";
+import { S, T, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 
 /** Future / Requires Backend Support: no /wishlist routes yet. */
 export function WishlistScreen() {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <ScreenContainer title="Wishlist">
       <View style={styles.body}>
@@ -23,11 +27,13 @@ export function WishlistScreen() {
             />
           }
         />
+        <Text style={styles.note}>Saving to a wishlist is in development.</Text>
       </View>
     </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  body: { paddingHorizontal: S.xl },
+const createStyles = (C: Palette) => StyleSheet.create({
+  body: { paddingHorizontal: GUTTER },
+  note: { marginTop: 14, color: C.baseContentFaint, fontSize: T.meta, textAlign: "center" },
 });

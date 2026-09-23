@@ -13,9 +13,11 @@ describe("resolveImageUrl", () => {
     expect(resolveImageUrl("https://assets.tcgdex.net/en/base/base1/4/high.webp", API)).toBe(
       "https://assets.tcgdex.net/en/base/base1/4/high.webp",
     );
-    expect(resolveImageUrl("https://cards.scryfall.io/large/front/0/9/x.jpg?1", API)).toBe(
-      "https://cards.scryfall.io/large/front/0/9/x.jpg?1",
-    );
+  });
+
+  it("routes Scryfall images through the API, which some phone networks cannot reach directly", () => {
+    const scryfall = "https://cards.scryfall.io/large/front/0/9/x.jpg?1";
+    expect(resolveImageUrl(scryfall, API)).toBe(`${API}/images?url=${encodeURIComponent(scryfall)}`);
   });
 
   it("re-points re-hosted /assets images at the API host this app talks to", () => {

@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import type { CatalogCard } from "@/services/catalog";
 import { CardTile } from "./CardTile";
-import { C, R, S, CARD_ASPECT } from "@/theme";
+import { R, S, CARD_ASPECT, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 
 const TILE_WIDTH = 116;
 
@@ -15,6 +17,8 @@ export function CardRail({
   isLoading?: boolean;
   onPressCard?: (card: CatalogCard) => void;
 }) {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <ScrollView
       horizontal
@@ -40,7 +44,7 @@ export function CardRail({
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: S.xl, gap: 12 },
+const createStyles = (C: Palette) => StyleSheet.create({
+  content: { paddingHorizontal: GUTTER, gap: 12 },
   skeleton: { borderRadius: R.sm + 2, backgroundColor: C.base300 },
 });
