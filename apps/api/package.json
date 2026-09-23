@@ -19,6 +19,7 @@
     "sync:starwars": "tsx src/scripts/syncCatalog.ts starwars",
     "sync:fab": "tsx src/scripts/syncCatalog.ts fab",
     "sync:others": "tsx src/scripts/syncCatalog.ts all",
+    "sync:prices": "tsx src/scripts/syncPrices.ts",
     "recognition:index": "tsx src/scripts/buildRecognitionIndex.ts",
     "recognition:eval": "tsx src/scripts/evaluateRecognition.ts"
   },

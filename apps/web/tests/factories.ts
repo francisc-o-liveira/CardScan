@@ -9,6 +9,7 @@ export const makeCard = (overrides: Partial<CatalogCard> = {}): CatalogCard => (
   rarity: "Rare Holo",
   variant: "",
   imageUrl: "https://img.test/charizard.webp",
+  marketPrice: null,
   set: {
     id: "set-1",
     tcgId: "tcg-1",

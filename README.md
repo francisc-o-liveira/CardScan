@@ -18,7 +18,9 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 4, the collection, has landed.** Add cards from a scan or a card page, keep copies per condition and language, and see the totals on Home and Profile — on web and mobile.
 
-Wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
+**Prices** come from TCGplayer via [tcgcsv.com](https://tcgcsv.com), a free, keyless daily mirror of TCGplayer's own catalog and price API: `pnpm sync:prices` stores each card's market/low/mid/high price per finish (Normal, Holofoil, Reverse Holofoil …) in USD, plus one market-price history point per day, and the web app shows them on card tiles and card detail (with a 1M/3M/6M/1Y price-history chart). Run it once a day — the history only grows from runs. See [`docs/database.md`](docs/database.md#tcgplayer-prices) for coverage per game.
+
+Wishlist, decks, and pricing on mobile are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
 
 ## Tech stack
 
@@ -82,6 +84,7 @@ pnpm sync:yugioh    # from YGOPRODeck — downloads and re-hosts ~14.5k card ima
 pnpm sync:others    # Lorcana, One Piece, Digimon, Star Wars: Unlimited, Flesh and Blood — ~3 minutes
                     # (or each on its own: sync:lorcana | sync:onepiece | sync:digimon | sync:starwars | sync:fab)
                     # `pnpm sync:all` runs all eight games
+pnpm sync:prices    # TCGplayer prices for every imported game — ~2 minutes; run daily (or `sync:prices pokemon`)
 
 # 6. Run the apps (in separate terminals)
 pnpm dev:api      # http://localhost:4100

@@ -31,6 +31,7 @@
     "sync:starwars": "pnpm --filter @cardscan/api run sync:starwars",
     "sync:fab": "pnpm --filter @cardscan/api run sync:fab",
     "sync:others": "pnpm --filter @cardscan/api run sync:others",
+    "sync:prices": "pnpm --filter @cardscan/api run sync:prices",
     "sync:all": "pnpm sync:pokemon && pnpm sync:magic && pnpm sync:yugioh && pnpm sync:others",
     "recognition:index": "pnpm --filter @cardscan/api run recognition:index all",
     "recognition:eval": "pnpm --filter @cardscan/api run recognition:eval",

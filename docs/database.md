@@ -10,13 +10,36 @@ PostgreSQL via Prisma. Schema: [`prisma/schema.prisma`](../prisma/schema.prisma)
 - **Wishlist / WishlistItem**
 - **Scan / RecognitionFeedback** — `RecognitionFeedback` records user corrections to a scan's predicted card, building a dataset for future recognition improvements.
 - **Deck / DeckItem**
-- **Price / PriceHistory** — `Price` is the latest snapshot per `(cardId, source)`; `PriceHistory` is an append-only time series.
+- **Price / PriceHistory** — `Price` is the latest snapshot per `(cardId, source, subType)` — `subType` is the finish ("Holofoil", "Reverse Holofoil", "1st Edition" …); `PriceHistory` is an append-only time series with one point per card, finish and day.
 
 All primary keys are UUIDs. Money fields use `Decimal(10,2)`, never `Float`.
 
 ## Why only User/Auth/Catalog tables are used right now
 
-Phase 1 implements the full schema up front (so later phases don't need destructive migrations) but only wires `User`, `RefreshToken`, `PasswordResetToken`, `Tcg`, `CardSet`, and `Card` into the API so far. `CollectionItem`, `WishlistItem`, `Scan`, `Deck`, `Price`, and `PriceHistory` exist with correct foreign keys and constraints, ready for their respective phases.
+Phase 1 implements the full schema up front (so later phases don't need destructive migrations) but only wires `User`, `RefreshToken`, `PasswordResetToken`, `Tcg`, `CardSet`, `Card`, `Price` and `PriceHistory` into the API so far. `CollectionItem`, `WishlistItem`, `Scan`, and `Deck` exist with correct foreign keys and constraints, ready for their respective phases.
+
+## TCGplayer prices
+
+`pnpm sync:prices [game|all] [--verbose]` (`apps/api/src/services/priceSyncService.ts`) reads TCGplayer's prices from [tcgcsv.com](https://tcgcsv.com), which republishes TCGplayer's catalog and price API as static JSON once a day (no key; override the base with `TCGPLAYER_PRICES_URL`). Per game it fetches TCGplayer's groups (sets), each group's products and prices, and matches them onto our catalog:
+
+- **Magic** matches exactly: Scryfall's bulk file carries each printing's TCGplayer `productId`.
+- **Every other game** matches a group to a set by code (where TCGplayer's abbreviations equal ours), by name with series prefixes read off (`SV03: Obsidian Flames`, `SM - Cosmic Eclipse`, `EX Emerald`, `XY Base Set` → `XY`), or through a small alias table for sets named too differently (`POKEMON_ALIASES`). A product then matches a card by collector number **only when the names agree too** (TCGplayer keeps a reprint's original number — the 30th Celebration Classic Collection's `Delcatty 5/109` — where we renumber), falling back to a name unique within the set. Anything ambiguous stays unpriced rather than guessed.
+- A card gets one row per finish; the API's `marketPrice` is the main finish's market price (reverse holos and Magic foils rank last). Each run replaces the game's prices in one transaction and rewrites the day's history point.
+- `--verbose` lists TCGplayer groups that matched no set and every match whose names differ, for review.
+
+**History.** `GET /api/cards/:id/price-history?range=1m|3m|6m|1y` returns each finish's daily market-price points in the range, with the change over the range and its low/high; the card page draws it as a chart next to the current price points. The history is our own — one point per card, finish and day, written by each sync — so it only exists from the first sync (2026-09-23) onward and only grows if the sync runs daily. There is no public source for older TCGplayer history: tcgcsv's daily price archive (from 2024-02-08) has been taken offline, and TCGplayer's own chart/sales-volume API is internal. Sales volume, listing quantity and seller counts aren't available at all.
+
+tcgcsv refreshes once a day and asks that each price file be requested at most once per 24 hours — run the sync daily, not more.
+
+Per-game differences live in `apps/api/src/providers/tcgplayer/gameRules.ts` and the `PRICE_GAMES` config:
+
+- **Game-wide numbers** (Yu-Gi-Oh!, Digimon, One Piece, Flesh and Blood): collector numbers are unique across the game, so products match against every card, not one set — TCGplayer's groups don't line up with our sets there (Digimon's "Release Special Booster 1.0" holds BT1–BT3). The group's set, when it has one, only breaks ties between a card and its reprint (One Piece `_r1`).
+- **One product, several of our cards**: Flesh and Blood keeps a row per `edition-foiling[-art]` and Star Wars a separate `F` card per foil, where TCGplayer sells one product priced per finish. Each of our rows takes only its finish ("1st Edition Rainbow Foil", "Foil"); Magic's ★ printings (7th–9th Edition foils) likewise take their card's Foil price. A second, lenient pass lets Flesh and Blood promo rows ignore art/edition labels TCGplayer doesn't print.
+- **Tie-breaks on a shared number**: exact name ("Kaido & Linlin (Parallel)"), then rarity — Yu-Gi-Oh! prints one number in several rarities, and TCGplayer's "Prismatic Ultimate Rare" is our "Ultimate Rare".
+- **Groups spanning sets**: Lorcana's single "Disney Lorcana Promo Cards" group covers our P1–P4 and event promo sets (`groupSets`); Star Wars promo lines are aliased by name.
+- Responses are cached for 20 hours in `apps/api/storage/tcgcsv-cache` (`TCGPLAYER_CACHE_DIR`), so re-running a sync never re-downloads.
+
+Coverage on 2026-09-23: Lorcana 98.3% of cards, Digimon 97.7%, One Piece 96.7%, Pokémon 96.6%, Flesh and Blood 94.5%, Yu-Gi-Oh! 93.9%, Magic 90.9%, Star Wars 81.3%. What's left is mostly printings TCGplayer doesn't sell: Pokémon trainer kits (both decks as one group with repeating numbers), Magic's Salvat/Foreign Black Border/Art Series sets, Yu-Gi-Oh!'s set-less cards and European-only prints, and Star Wars' yearly promo sets.
 
 ## Pokémon catalog sync
 

@@ -1,5 +1,5 @@
 import type { ApiResponse, PaginatedResponse } from "@cardscan/types";
-import { cardQuerySchema, setQuerySchema } from "@cardscan/validation";
+import { cardQuerySchema, priceHistoryQuerySchema, setQuerySchema } from "@cardscan/validation";
 import { asyncHandler } from "../utils/asyncHandler";
 import * as catalogService from "../services/catalogService";
 
@@ -37,6 +37,13 @@ export const listCards = asyncHandler(async (req, res) => {
       },
     },
   };
+  res.status(200).json(response);
+});
+
+export const getCardPriceHistory = asyncHandler(async (req, res) => {
+  const { range } = priceHistoryQuerySchema.parse(req.query);
+  const history = await catalogService.getCardPriceHistory(req.params.id as string, range);
+  const response: ApiResponse<typeof history> = { success: true, data: history };
   res.status(200).json(response);
 });
 

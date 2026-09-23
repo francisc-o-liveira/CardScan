@@ -318,8 +318,9 @@ correction to `RecognitionFeedback`.
 
 > **Future / Requires Backend Support.** Add to collection and Wishlist render disabled
 > with a one-line reason rather than hidden — the path has to be obvious now, and it needs
-> only the endpoint. Market value shows "Not tracked yet"; the `Price` tables exist but no
-> source is wired up.
+> only the endpoint. Market value comes from TCGplayer: the headline market price under the
+> title, a per-finish table (market/low/mid/high) and a price-history chart; a card TCGplayer
+> doesn't price says so instead of showing a number.
 
 ### 5.6 Search — `/search`
 
@@ -404,7 +405,6 @@ card, set, image and count the UI shows comes from these.
 | Collection | `/collection` routes | Empty state with two working alternatives |
 | Wishlist | `/wishlist` routes | Empty state; button disabled with a reason |
 | Scanning | `/scans` + recognition model | Viewfinder in coming-soon state; name search works |
-| Pricing | price source | "Not tracked yet" on card detail |
 | Decks | `/decks` routes | Empty state |
 | Collection stats | `/collection` | Zeroes with an explanation |
 
