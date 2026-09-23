@@ -17,3 +17,9 @@ export const CAPABILITIES = {
   decks: FEATURE_FLAGS.ENABLE_DECKS,
   pricing: FEATURE_FLAGS.ENABLE_PRICE_ALERTS,
 } as const;
+
+/**
+ * Scan results at or above this confidence show the single best card to confirm; below it, the apps show
+ * the candidate list and ask which one it is. Calibrated with apps/api scripts/evaluateRecognition.ts.
+ */
+export const SCAN_CONFIDENT = 0.6;

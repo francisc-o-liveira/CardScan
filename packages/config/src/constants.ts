@@ -116,7 +116,8 @@ export const FEATURE_FLAGS = {
   /** Collection/wishlist writes need API routes that don't exist yet. */
   ENABLE_COLLECTION: false,
   ENABLE_WISHLIST: false,
-  ENABLE_SCANNING: false,
+  /** Camera recognition: POST /api/scans plus the index built by `recognition:index`. */
+  ENABLE_SCANNING: true,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

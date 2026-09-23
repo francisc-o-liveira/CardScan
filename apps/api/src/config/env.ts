@@ -27,6 +27,10 @@ const envSchema = z.object({
     .default("https://raw.githubusercontent.com/the-fab-cube/flesh-and-blood-cards/develop/json/english"),
   ASSETS_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage")),
   API_PUBLIC_URL: z.string().min(1).default("http://localhost:4100"),
+  /** Card recognition data: the downloaded model and the visual index of the catalog. */
+  RECOGNITION_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage/recognition")),
+  /** Where the recognition model runs. "auto" uses the GPU through DirectML on Windows, else the CPU. */
+  RECOGNITION_DEVICE: z.enum(["auto", "cpu", "dml"]).default("auto"),
 });
 
 const parsed = envSchema.safeParse(process.env);

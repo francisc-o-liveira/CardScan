@@ -17,3 +17,10 @@ export const formatMonthYear = (value: string | null | undefined): string | null
   if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleDateString(DATE_LOCALE, { month: "short", year: "numeric" });
 };
+
+export const formatDateTime = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString(DATE_LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+};

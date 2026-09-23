@@ -1,3 +1,3 @@
-import { ScanHistoryScreen } from "@/screens/Secondary/SecondaryScreens";
+import { ScanHistoryScreen } from "@/screens/Scans/ScanHistoryScreen";
 
 export default ScanHistoryScreen;

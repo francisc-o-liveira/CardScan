@@ -96,11 +96,11 @@ const buildSlides = (styles: ReturnType<typeof createStyles>, C: Palette): Slide
   },
   {
     title: "Find any card in seconds.",
-    body: "Search 130,000+ Pokémon and Magic cards by name, set or collector number — with the real artwork, straight from the source.",
+    body: "Scan a card with your camera, or search 130,000+ Pokémon and Magic cards by name, set or number — with the real artwork.",
     visual: (
       <View style={styles.frame}>
         <Ionicons name="camera-outline" size={28} color="rgba(255,255,255,0.32)" />
-        <Text style={styles.frameCaption}>Camera scanning is on the way</Text>
+        <Text style={styles.frameCaption}>Hold a card up to the camera</Text>
       </View>
     ),
   },

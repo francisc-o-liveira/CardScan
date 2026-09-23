@@ -18,13 +18,17 @@
     "sync:digimon": "tsx src/scripts/syncCatalog.ts digimon",
     "sync:starwars": "tsx src/scripts/syncCatalog.ts starwars",
     "sync:fab": "tsx src/scripts/syncCatalog.ts fab",
-    "sync:others": "tsx src/scripts/syncCatalog.ts all"
+    "sync:others": "tsx src/scripts/syncCatalog.ts all",
+    "recognition:index": "tsx src/scripts/buildRecognitionIndex.ts",
+    "recognition:eval": "tsx src/scripts/evaluateRecognition.ts"
   },
   "dependencies": {
     "@cardscan/config": "workspace:*",
     "@cardscan/types": "workspace:*",
     "@cardscan/validation": "workspace:*",
+    "@huggingface/transformers": "^4.3.0",
     "@prisma/client": "^5.19.1",
+    "@techstark/opencv-js": "5.0.0-release.1",
     "axios": "^1.7.4",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -34,6 +38,8 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0",
+    "sharp": "^0.35.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -42,6 +48,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^2.2.0",
     "@types/node": "^20.14.15",
     "@types/supertest": "^7.2.1",
     "prisma": "^5.19.1",

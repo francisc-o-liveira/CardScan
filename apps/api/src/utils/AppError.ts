@@ -24,4 +24,5 @@ export const Errors = {
   rateLimited: (message = "Too many requests, please try again later") =>
     new AppError(429, "RATE_LIMITED", message),
   internal: (message = "Something went wrong") => new AppError(500, "INTERNAL_ERROR", message),
+  serviceUnavailable: (message: string) => new AppError(503, "SERVICE_UNAVAILABLE", message),
 };

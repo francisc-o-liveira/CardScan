@@ -8,3 +8,7 @@ allowBuilds:
   esbuild: true
   prisma: true
   unrs-resolver: false
+  # Not needed: CPU binaries ship in the package (the script only fetches CUDA extras),
+  # and protobufjs only prints version warnings.
+  onnxruntime-node: false
+  protobufjs: false

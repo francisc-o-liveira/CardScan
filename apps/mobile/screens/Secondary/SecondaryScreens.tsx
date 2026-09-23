@@ -45,31 +45,6 @@ export function DecksScreen() {
   );
 }
 
-/** Future / Requires Backend Support: the Scan model exists but nothing writes to it until recognition ships. */
-export function ScanHistoryScreen() {
-  const C = useColors();
-  const styles = useMemo(() => createStyles(C), [C]);
-  return (
-    <ScreenContainer title="Scan history">
-      <View style={styles.body}>
-        <EmptyState
-          icon="time-outline"
-          title="No scans yet"
-          description="Every card you scan is listed here with what CardScan identified it as, so you can correct anything it got wrong."
-          action={
-            <Button
-              label="Identify a card"
-              icon="scan-outline"
-              variant="primary"
-              onPress={() => router.push("/(tabs)/scan")}
-            />
-          }
-        />
-      </View>
-    </ScreenContainer>
-  );
-}
-
 interface Faq {
   question: string;
   answer: string;
@@ -83,9 +58,9 @@ const FAQS: Faq[] = [
       "Search and browse the full Pokémon and Magic: The Gathering catalogs — around 130,000 cards across 1,270 sets, with artwork, set details, rarity and collector numbers. Start from Discover or Search.",
   },
   {
-    question: "When can I scan a card with my camera?",
+    question: "How does scanning work?",
     answer:
-      "Camera recognition is in development. Until then, the Scan screen finds any card by name in a couple of keystrokes — the same destination, without the camera.",
+      "Open Scan and hold the card inside the frame. CardScan compares the photo with every card in the catalog and shows the best match; when it isn't sure, it asks you to pick. Each scan, and any correction you make, is kept in Scan history.",
   },
   {
     question: "Why is my collection empty?",

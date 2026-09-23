@@ -46,6 +46,24 @@ Filter with `?tcg=pokemon|magic|yugioh`. Yu-Gi-Oh! is populated by `pnpm sync:yu
 | ------ | ------------------------------- | ----- |
 | GET    | `/assets/yugioh/cards/:id.jpg`  | Re-hosted Yu-Gi-Oh! card images. Long-lived cache headers, and `Cross-Origin-Resource-Policy: cross-origin` so the web app (another origin in dev) can display them. Unknown paths return the standard 404 envelope. |
 
+## Scans
+
+Card recognition — see [recognition.md](recognition.md). All routes need a Bearer token and only ever
+return the caller's own scans.
+
+| Method | Path                  | Notes |
+| ------ | --------------------- | ----- |
+| POST   | `/scans`              | Multipart, one photo in the `image` field (≤10MB). Stores the photo, recognises the card and returns the `Scan` with ranked `candidates` and a `confidence`. 30 req/min per IP. `503 SERVICE_UNAVAILABLE` until the recognition index is built. |
+| GET    | `/scans`              | The 50 most recent scans, newest first. |
+| GET    | `/scans/:id`          | One scan. |
+| POST   | `/scans/:id/confirm`  | `{ cardId }` — the card the photo really showed (any catalog card, not only a candidate). Also records it in `RecognitionFeedback`. |
+
+## Images
+
+| Method | Path                  | Notes |
+| ------ | --------------------- | ----- |
+| GET    | `/images?url=`        | Fetches a card image once from an allowlisted host (`cards.scryfall.io`, https only), stores it and redirects to the copy under `/assets/proxy`. For networks that can't reach the image CDN. |
+
 ## Planned (later phases)
 
-`/api/scans`, `/api/collection`, `/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.
+`/api/collection`, `/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.
