@@ -19,6 +19,9 @@ export interface MatchableCard {
   id: string;
   name: string;
   collectorNumber: string;
+  rarity?: string | null;
+  variant?: string | null;
+  setId?: string;
 }
 
 /** Lowercase, accent-free, alphanumerics only: "Scarlet & Violet—151" → "scarletandviolet151". */
@@ -51,8 +54,12 @@ export const baseProductName = (name: string): string =>
     .replace(/\s+-\s*[A-Za-z0-9-]*\d[A-Za-z0-9-]*(?:\/[A-Za-z0-9-]+)?$/, "")
     .trim();
 
+/** The card number without trailing extras — Digimon appends the rarity ("BT24-014 R"). */
 export const productNumber = (product: TcgcsvProduct): string | null =>
-  product.extendedData.find((field) => field.name === "Number")?.value?.trim() || null;
+  product.extendedData
+    .find((field) => field.name === "Number")
+    ?.value?.trim()
+    .split(/\s+/)[0] || null;
 
 /**
  * Names a group might be known by on our side, most specific first. TCGplayer
@@ -97,8 +104,9 @@ export const matchGroupToSet = (
   }
 
   if (matchByCode && group.abbreviation) {
-    const code = group.abbreviation.toLowerCase();
-    const byCode = sets.filter((set) => set.code.toLowerCase() === code);
+    // "BT-01" and "BT1" are the same code.
+    const code = normalizeNumber(group.abbreviation);
+    const byCode = sets.filter((set) => normalizeNumber(set.code) === code);
     if (byCode.length === 1) return byCode[0]!;
   }
 
@@ -124,12 +132,70 @@ const groupBy = <T>(items: T[], key: (item: T) => string): Map<string, T[]> => {
 const namesAgree = (a: string, b: string): boolean =>
   a === b || (a.length > 0 && b.length > 0 && (a.startsWith(b) || b.startsWith(a)));
 
-/** Pre-indexes one set's cards so each product lookup is O(1). */
-export const createCardMatcher = (cards: MatchableCard[]) => {
-  const byNumber = groupBy(cards, (card) => normalizeNumber(card.collectorNumber));
+/** The product's name with any trailing number but every qualifier kept: "Nami (OP01-016) (SP)". */
+const fullProductName = (name: string): string =>
+  normalizeName(name.replace(/\s+-\s*[A-Za-z0-9-]*\d[A-Za-z0-9-]*(?:\/[A-Za-z0-9-]+)?$/, ""));
+
+export const productRarity = (product: TcgcsvProduct): string | null =>
+  product.extendedData.find((field) => field.name === "Rarity")?.value?.trim() || null;
+
+/** Keeps only the finishes (TCGplayer subtypes) that belong to one of our cards. */
+export type FinishFilter = (subType: string) => boolean;
+
+export interface CardMatch {
+  card: MatchableCard;
+  /** Absent: every finish of the product is this card's. */
+  finishes?: FinishFilter;
+}
+
+/** How a game's cards line up with TCGplayer products, where it differs from the default. */
+export interface CardRules {
+  /** Our collector number → the key TCGplayer's number is compared on (default `normalizeNumber`). */
+  numberKey?: (collectorNumber: string) => string;
+  /**
+   * For games where one TCGplayer product covers several of our cards — each
+   * finish or edition is its own card on our side — which of the product's
+   * finishes belong to `card`, or `null` when this product isn't that card's.
+   */
+  finishes?: (
+    card: MatchableCard,
+    product: TcgcsvProduct,
+    pass: { lenient: boolean },
+  ) => FinishFilter | null;
+}
+
+/**
+ * Pre-indexes a pool of cards (one set's, or a whole game's when its numbers
+ * are unique game-wide) so each product lookup is O(1).
+ *
+ * A product matches by collector number when the names agree too; several
+ * cards on one number are told apart by exact name ("Kaido & Linlin (Parallel)"),
+ * then rarity (Yu-Gi-Oh! prints a number in several rarities), then — for games
+ * with `finishes` — split across all of them by finish. Without a number, a
+ * name unique within the pool matches.
+ */
+export const createCardMatcher = (
+  cards: MatchableCard[],
+  rules: CardRules = {},
+  { lenient = false }: { lenient?: boolean } = {},
+) => {
+  const numberKey = rules.numberKey ?? normalizeNumber;
+  const byNumber = groupBy(cards, (card) => numberKey(card.collectorNumber));
   const byName = groupBy(cards, (card) => normalizeName(card.name));
 
-  return (product: TcgcsvProduct): MatchableCard | null => {
+  const withFinishes = (pool: MatchableCard[], product: TcgcsvProduct): CardMatch[] => {
+    if (!rules.finishes) return pool.length === 1 ? [{ card: pool[0]! }] : [];
+    return pool.flatMap((card) => {
+      const finishes = rules.finishes!(card, product, { lenient });
+      return finishes ? [{ card, finishes }] : [];
+    });
+  };
+
+  /**
+   * `setId`: the set the product's TCGplayer group corresponds to, when known —
+   * it tells a card from its reprint in another set ("OP03-008" and "_r2").
+   */
+  return (product: TcgcsvProduct, { setId }: { setId?: string } = {}): CardMatch[] => {
     const name = normalizeName(baseProductName(product.name));
     const number = productNumber(product);
 
@@ -138,17 +204,40 @@ export const createCardMatcher = (cards: MatchableCard[]) => {
       // number on TCGplayer ("Delcatty 5/109") while we renumber them (#005 is
       // another card). The names must agree too, loosely — one may carry a
       // suffix the other lacks ("Pikachu" vs "Pikachu ex").
-      const sameNumber = (byNumber.get(normalizeNumber(number)) ?? []).filter((card) =>
+      let sameNumber = (byNumber.get(normalizeNumber(number)) ?? []).filter((card) =>
         namesAgree(normalizeName(card.name), name),
       );
-      if (sameNumber.length === 1) return sameNumber[0]!;
+      if (sameNumber.length > 1 && setId) {
+        const inSet = sameNumber.filter((card) => card.setId === setId);
+        if (inSet.length > 0) sameNumber = inSet;
+      }
+      if (sameNumber.length === 1) return withFinishes(sameNumber, product);
       if (sameNumber.length > 1) {
-        const exact = sameNumber.filter((card) => normalizeName(card.name) === name);
-        return exact.length === 1 ? exact[0]! : null;
+        const full = fullProductName(product.name);
+        const exact = sameNumber.filter((card) => normalizeName(card.name) === full);
+        if (exact.length === 1) return withFinishes(exact, product);
+
+        const rarity = productRarity(product);
+        if (rarity) {
+          const wanted = normalizeName(rarity);
+          const sameRarity = sameNumber.filter(
+            (card) => card.rarity && normalizeName(card.rarity) === wanted,
+          );
+          if (sameRarity.length === 1) return withFinishes(sameRarity, product);
+          // TCGplayer qualifies some rarities ours don't: "Prismatic Ultimate Rare" is our "Ultimate Rare".
+          if (sameRarity.length === 0) {
+            const qualified = sameNumber.filter(
+              (card) => card.rarity && wanted.endsWith(normalizeName(card.rarity)),
+            );
+            if (qualified.length === 1) return withFinishes(qualified, product);
+          }
+        }
+
+        return rules.finishes ? withFinishes(sameNumber, product) : [];
       }
     }
 
     const sameName = byName.get(name) ?? [];
-    return sameName.length === 1 ? sameName[0]! : null;
+    return sameName.length === 1 ? withFinishes(sameName, product) : [];
   };
 };

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import {
   baseProductName,
   createCardMatcher,
@@ -7,6 +7,12 @@ import {
   normalizeName,
   normalizeNumber,
 } from "../../src/providers/tcgplayer/match";
+import {
+  fleshAndBloodRules,
+  magicRules,
+  onePieceRules,
+  starWarsRules,
+} from "../../src/providers/tcgplayer/gameRules";
 import type { TcgcsvGroup, TcgcsvProduct } from "../../src/providers/tcgplayer/tcgcsv.types";
 
 const group = (name: string, abbreviation: string | null = null): TcgcsvGroup => ({
@@ -107,23 +113,110 @@ describe("createCardMatcher", () => {
   ]);
 
   it("matches on collector number when the names agree", () => {
-    expect(match(product("Greninja ex - 021/128", "021/128"))?.id).toBe("greninja");
+    expect(match(product("Greninja ex - 021/128", "021/128"))[0]?.card.id).toBe("greninja");
   });
 
   it("refuses a number match whose name disagrees", () => {
     // TCGplayer keeps a reprint's original number; ours was renumbered.
-    expect(match(product("Delcatty", "5/109"))).toBeNull();
+    expect(match(product("Delcatty", "5/109"))).toEqual([]);
   });
 
   it("falls back to a name that is unique in the set", () => {
-    expect(match(product("Charizard", "4/102"))?.id).toBe("charizard");
+    expect(match(product("Charizard", "4/102"))[0]?.card.id).toBe("charizard");
   });
 
   it("leaves an ambiguous name unmatched", () => {
-    expect(match(product("Pikachu"))).toBeNull();
+    expect(match(product("Pikachu"))).toEqual([]);
   });
 
   it("ignores sealed products", () => {
-    expect(match(product("30th Celebration Booster Pack"))).toBeNull();
+    expect(match(product("30th Celebration Booster Pack"))).toEqual([]);
+  });
+
+  it("reads the number before any trailing rarity (Digimon)", () => {
+    const digimon = createCardMatcher([{ id: "bt24", name: "Greymon", collectorNumber: "BT24-010" }]);
+    expect(digimon(product("Greymon", "BT24-010 C"))[0]?.card.id).toBe("bt24");
+  });
+
+  it("tells one number's printings apart by rarity, accepting TCGplayer's qualified names", () => {
+    const yugioh = createCardMatcher([
+      { id: "ur", name: "Laundry Dragonmaid", collectorNumber: "RA03-EN021", rarity: "Ultimate Rare" },
+      { id: "sr", name: "Laundry Dragonmaid", collectorNumber: "RA03-EN021", rarity: "Secret Rare" },
+      { id: "psr", name: "Laundry Dragonmaid", collectorNumber: "RA03-EN021", rarity: "Platinum Secret Rare" },
+    ]);
+    const withRarity = (name: string, rarity: string) => ({
+      ...product(name, "RA03-EN021"),
+      extendedData: [
+        { name: "Number", displayName: "Number", value: "RA03-EN021" },
+        { name: "Rarity", displayName: "Rarity", value: rarity },
+      ],
+    });
+    expect(yugioh(withRarity("Laundry Dragonmaid (Secret Rare)", "Secret Rare"))[0]?.card.id).toBe("sr");
+    expect(yugioh(withRarity("Laundry Dragonmaid (PUR)", "Prismatic Ultimate Rare"))[0]?.card.id).toBe("ur");
+  });
+
+  it("prefers the card in the product's own set over a reprint elsewhere", () => {
+    const onePiece = createCardMatcher(
+      [
+        { id: "orig", name: "Trafalgar Law", collectorNumber: "ST03-008", setId: "st03" },
+        { id: "reprint", name: "Trafalgar Law", collectorNumber: "ST03-008_r2", setId: "prb01" },
+      ],
+      onePieceRules,
+    );
+    const law = product("Trafalgar Law", "ST03-008");
+    expect(onePiece(law, { setId: "st03" })[0]?.card.id).toBe("orig");
+    expect(onePiece(law, { setId: "prb01" })[0]?.card.id).toBe("reprint");
   });
 });
+
+describe("game rules", () => {
+  const finishesOf = (matches: ReturnType<ReturnType<typeof createCardMatcher>>, subTypes: string[]) =>
+    Object.fromEntries(
+      matches.map(({ card, finishes }) => [card.id, subTypes.filter((s) => !finishes || finishes(s.toLowerCase()))]),
+    );
+
+  it("Flesh and Blood: each edition/foiling row takes its own finish", () => {
+    const fab = createCardMatcher(
+      [
+        { id: "a-s", name: "Surging Strike (Red)", collectorNumber: "WTR107", variant: "A-S" },
+        { id: "u-r", name: "Surging Strike (Red)", collectorNumber: "WTR107", variant: "U-R" },
+        { id: "ea", name: "Surging Strike (Red)", collectorNumber: "WTR107", variant: "U-S-EA" },
+      ],
+      fleshAndBloodRules,
+    );
+    const matches = fab(product("Surging Strike (Red)", "WTR107"));
+    expect(finishesOf(matches, ["1st Edition Normal", "Unlimited Edition Rainbow Foil", "Unlimited Edition Normal"])).toEqual({
+      "a-s": ["1st Edition Normal"],
+      "u-r": ["Unlimited Edition Rainbow Foil"],
+    });
+  });
+
+  it("Star Wars: the F card takes the foil finish, the plain card the rest", () => {
+    const swu = createCardMatcher(
+      [
+        { id: "plain", name: "Obedient Vanguard", collectorNumber: "104" },
+        { id: "foil", name: "Obedient Vanguard", collectorNumber: "104F" },
+      ],
+      starWarsRules,
+    );
+    expect(finishesOf(swu(product("Obedient Vanguard", "104")), ["Normal", "Foil"])).toEqual({
+      plain: ["Normal"],
+      foil: ["Foil"],
+    });
+  });
+
+  it("Magic: a ★ printing takes only the foil price", () => {
+    const magic = createCardMatcher(
+      [
+        { id: "base", name: "Sanctimony", collectorNumber: "39" },
+        { id: "star", name: "Sanctimony", collectorNumber: "39★" },
+      ],
+      magicRules,
+    );
+    expect(finishesOf(magic(product("Sanctimony", "39")), ["Normal", "Foil"])).toEqual({
+      base: ["Normal", "Foil"],
+      star: ["Foil"],
+    });
+  });
+});
+

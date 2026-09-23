@@ -6,6 +6,8 @@ import {
   baseProductName,
   createCardMatcher,
   normalizeName,
+  type CardRules,
+  type FinishFilter,
   matchGroupToSet,
   type GroupMatchOptions,
   type MatchableCard,
@@ -17,6 +19,12 @@ import type {
   TcgcsvProduct,
 } from "../providers/tcgplayer/tcgcsv.types";
 import { streamDefaultCards } from "../providers/magic/bulkCards";
+import {
+  fleshAndBloodRules,
+  magicRules,
+  onePieceRules,
+  starWarsRules,
+} from "../providers/tcgplayer/gameRules";
 
 export const PRICE_SOURCE = "tcgplayer";
 const CURRENCY = "USD";
@@ -30,6 +38,16 @@ interface GameConfig extends GroupMatchOptions {
    * publish it. Those cards match exactly; set/name matching only fills gaps.
    */
   productIds?: () => Promise<Map<number, string>>;
+  /**
+   * "game": collector numbers are unique across the game ("BT24-014",
+   * "LOB-EN001"), so products match against every card regardless of group —
+   * TCGplayer's groups don't line up with our sets for these games.
+   * Default "set": a group is matched to a set first.
+   */
+  scope?: "set" | "game";
+  cards?: CardRules;
+  /** TCGplayer groups that gather cards from several of our sets → those sets' codes. */
+  groupSets?: Record<string, string[]>;
 }
 
 /** Scryfall records every paper printing's TCGplayer productId in its bulk file. */
@@ -81,17 +99,51 @@ const POKEMON_ALIASES: Record<string, string> = {
   "McDonald's Promos 2024": "2024sv",
 };
 
+/** Star Wars: Unlimited promo lines — SWU-DB and TCGplayer name them differently. */
+const STARWARS_ALIASES: Record<string, string> = {
+  "Spark of Rebellion: Weekly Play Promos": "SOROP",
+  "Shadows of the Galaxy: Weekly Play Promos": "SHDOP",
+  "Twilight of the Republic: Weekly Play Promos": "TWIOP",
+  "Jump to Lightspeed: Weekly Play Promos": "JTLOP",
+  "Legends of the Force: Weekly Play Promos": "LOFOP",
+  "Secrets of Power: Weekly Play Promos": "SECOP",
+  "Ashes of the Empire - Weekly Play Promos": "ASHOP",
+  "A Lawless Time: Weekly Play Promos": "LAWP",
+  "2024 Convention Exclusive": "C24",
+  "2025 Convention Exclusive": "C25",
+  "2026 Convention Exclusive": "C26",
+  "2025 Gift Box": "G25",
+  "Gamegenic Promos": "GG",
+  "Icons 2027 Edition": "IC27",
+  "Twin Suns": "TS26",
+};
+
 /** TCGplayer category per game (https://tcgcsv.com/tcgplayer/categories). */
 export const PRICE_GAMES: Record<string, GameConfig> = {
   pokemon: { categoryId: 3, matchByCode: false, aliases: POKEMON_ALIASES },
-  magic: { categoryId: 1, matchByCode: true, productIds: scryfallProductIds },
-  yugioh: { categoryId: 2, matchByCode: false },
-  lorcana: { categoryId: 71, matchByCode: false },
-  onepiece: { categoryId: 68, matchByCode: true },
-  digimon: { categoryId: 63, matchByCode: true },
-  starwars: { categoryId: 79, matchByCode: true },
-  fab: { categoryId: 62, matchByCode: true },
+  magic: { categoryId: 1, matchByCode: true, productIds: scryfallProductIds, cards: magicRules },
+  yugioh: { categoryId: 2, matchByCode: false, scope: "game" },
+  lorcana: {
+    categoryId: 71,
+    matchByCode: false,
+    // Lorcast splits promos into numbered sets; TCGplayer sells them as one line.
+    groupSets: {
+      "Disney Lorcana Promo Cards": ["P1", "P2", "P3", "P4", "cp", "C2", "CC1", "PD1", "DIS", "Coconut"],
+      "D23 Promos": ["D23"],
+      "Disney100 Promos": ["D23", "P1"],
+    },
+  },
+  onepiece: { categoryId: 68, matchByCode: true, scope: "game", cards: onePieceRules },
+  digimon: { categoryId: 63, matchByCode: true, scope: "game" },
+  starwars: { categoryId: 79, matchByCode: true, aliases: STARWARS_ALIASES, cards: starWarsRules },
+  fab: { categoryId: 62, matchByCode: true, scope: "game", cards: fleshAndBloodRules },
 };
+
+/** Promo / event reprints of a set's cards — matched after the set's own products. */
+const SECONDARY_GROUP = /release event|pre-?release|celebration event|promo|_pr$/i;
+
+/** "Merukimon (Alternate Art)" after "Merukimon": the plain printing claims a shared card first. */
+const productOrder = (product: TcgcsvProduct) => (/[([]/.test(product.name) ? 1 : 0);
 
 export interface PriceSyncResult {
   groups: number;
@@ -126,7 +178,14 @@ export const syncPrices = async (
   });
   const cards = await prisma.card.findMany({
     where: { tcgId: tcg.id },
-    select: { id: true, name: true, collectorNumber: true, setId: true },
+    select: {
+      id: true,
+      name: true,
+      collectorNumber: true,
+      setId: true,
+      rarity: true,
+      variant: true,
+    },
   });
   const cardsBySet = new Map<string, MatchableCard[]>();
   for (const card of cards) {
@@ -152,30 +211,45 @@ export const syncPrices = async (
   const groups = await fetchGroups(game.categoryId);
   log(`[price-sync:${slug}] ${groups.length} TCGplayer groups, ${sets.length} sets in catalog`);
 
+  const gameScope = game.scope === "game";
   const targets: { group: TcgcsvGroup; set: MatchableSet | null }[] = [];
   const unmatchedGroups: string[] = [];
   for (const group of groups) {
+    // In a game-scoped game the set only breaks ties (a card vs its reprint).
     const set = matchGroupToSet(group, sets, game);
-    if (!set) unmatchedGroups.push(group.name);
-    // Without known productIds an unmatched group has nothing to offer.
-    if (set || game.productIds) targets.push({ group, set });
+    const spansSets = Boolean(game.groupSets?.[group.name]);
+    if (!set && !spansSets && !gameScope) unmatchedGroups.push(group.name);
+    // A group matched to no set only helps when its products can be found another way.
+    if (set || spansSets || game.productIds || gameScope) targets.push({ group, set });
   }
 
-  const fetched: { set: MatchableSet | null; products: TcgcsvProduct[]; prices: TcgcsvPrice[] }[] =
-    [];
+  type Fetched = {
+    order: number;
+    secondary: boolean;
+    name: string;
+    set: MatchableSet | null;
+    products: TcgcsvProduct[];
+    prices: TcgcsvPrice[];
+  };
+  const fetched: Fetched[] = [];
   let groupsFailed = 0;
-  await mapWithConcurrency(targets, GROUP_FETCH_CONCURRENCY, async ({ group, set }) => {
+  await mapWithConcurrency(targets, GROUP_FETCH_CONCURRENCY, async ({ group, set }, order) => {
     try {
       const [products, prices] = await Promise.all([
         fetchProducts(game.categoryId, group.groupId),
         fetchPrices(game.categoryId, group.groupId),
       ]);
       // Keep only what matching reads — extendedData carries full rules text.
-      const slim = products.map((product) => ({
-        ...product,
-        extendedData: product.extendedData.filter((field) => field.name === "Number"),
-      }));
-      fetched.push({ set, products: slim, prices });
+      const slim = products
+        .map((product) => ({
+          ...product,
+          extendedData: product.extendedData.filter(
+            (field) => field.name === "Number" || field.name === "Rarity",
+          ),
+        }))
+        .sort((a, b) => productOrder(a) - productOrder(b));
+      const secondary = SECONDARY_GROUP.test(group.name) || SECONDARY_GROUP.test(group.abbreviation ?? "");
+      fetched.push({ order, secondary, name: group.name, set, products: slim, prices });
     } catch (error) {
       groupsFailed++;
       log(
@@ -186,16 +260,23 @@ export const syncPrices = async (
     }
   });
 
+  // Fetches finish in any order; matching must not. A set's own groups go
+  // before its promo/event reprints, then TCGplayer's listing order.
+  fetched.sort((a, b) => Number(a.secondary) - Number(b.secondary) || a.order - b.order);
+
   // Two products landing on one card (a card and its stamped promo, say): the
   // first keeps it, so a card never shows a blend of two listings' prices.
   // Exact productIds are assigned before any name/number match can claim a card.
-  const cardByProduct = new Map<number, string>();
-  const productByCard = new Map<string, number>();
+  // One product may feed several cards, each with only its own finishes.
+  const claimsByProduct = new Map<number, { cardId: string; finishes?: FinishFilter }[]>();
+  const claimedCards = new Set<string>();
   const looseMatches: string[] = [];
-  const claim = (productId: number, cardId: string) => {
-    if (productByCard.has(cardId) || cardByProduct.has(productId)) return false;
-    productByCard.set(cardId, productId);
-    cardByProduct.set(productId, cardId);
+  const claim = (productId: number, cardId: string, finishes?: FinishFilter) => {
+    if (claimedCards.has(cardId)) return false;
+    claimedCards.add(cardId);
+    const claims = claimsByProduct.get(productId);
+    if (claims) claims.push({ cardId, finishes });
+    else claimsByProduct.set(productId, [{ cardId, finishes }]);
     return true;
   };
 
@@ -207,43 +288,90 @@ export const syncPrices = async (
       if (card) claim(product.productId, card.id);
     }
   }
-  for (const group of fetched) {
-    if (!group.set) continue;
-    const matchCard = createCardMatcher(cardsBySet.get(group.set.id) ?? []);
-    for (const product of group.products) {
-      if (cardByProduct.has(product.productId)) continue;
-      const card = matchCard(product);
-      if (!card) continue;
-      const loose =
-        normalizeName(baseProductName(card.name)) !== normalizeName(baseProductName(product.name));
-      // With exact ids available, a card left over by them is usually one
-      // TCGplayer doesn't sell on its own, and a loosely-named product is a
-      // different item ("… (Display Commander) - Thick Stock") — don't borrow its price.
-      if (loose && game.productIds) continue;
-      if (!claim(product.productId, card.id)) continue;
-      if (loose) looseMatches.push(`${card.name} #${card.collectorNumber} ← ${product.name}`);
+
+  // Games that split a product across cards by finish may add cards to a
+  // product another card already claimed (a ★ foil beside its non-foil), and
+  // get a second, lenient pass for rows the strict one left unpriced.
+  const splitsByFinish = Boolean(game.cards?.finishes);
+  const runPass = (lenient: boolean) => {
+    const options = { lenient };
+    const gameMatcher = gameScope ? createCardMatcher(cards, game.cards, options) : null;
+    const setMatchers = new Map<string, ReturnType<typeof createCardMatcher>>();
+    const matcherFor = (key: string, setIds: string[]) => {
+      let matcher = setMatchers.get(key);
+      if (!matcher) {
+        const pool = setIds.flatMap((id) => cardsBySet.get(id) ?? []);
+        matcher = createCardMatcher(pool, game.cards, options);
+        setMatchers.set(key, matcher);
+      }
+      return matcher;
+    };
+    const setIdByCode = new Map(sets.map((set) => [set.code, set.id]));
+
+    for (const group of fetched) {
+      const spannedCodes = game.groupSets?.[group.name];
+      const matchCards =
+        gameMatcher ??
+        (spannedCodes
+          ? matcherFor(
+              `group:${group.name}`,
+              spannedCodes.flatMap((code) => setIdByCode.get(code) ?? []),
+            )
+          : group.set
+            ? matcherFor(group.set.id, [group.set.id])
+            : null);
+      if (!matchCards) continue;
+      const subTypesByProduct = new Map<number, string[]>();
+      for (const price of group.prices) {
+        const list = subTypesByProduct.get(price.productId) ?? [];
+        list.push((price.subTypeName ?? "").toLowerCase());
+        subTypesByProduct.set(price.productId, list);
+      }
+      for (const product of group.products) {
+        if (!splitsByFinish && claimsByProduct.has(product.productId)) continue;
+        const subTypes = subTypesByProduct.get(product.productId) ?? [];
+        for (const { card, finishes } of matchCards(product, { setId: group.set?.id })) {
+          if (claimedCards.has(card.id)) continue;
+          // A card split by finish only takes a product that actually prices its
+          // finish — otherwise it would block the product that does.
+          if (finishes && !subTypes.some(finishes)) continue;
+          const loose =
+            normalizeName(baseProductName(card.name)) !==
+            normalizeName(baseProductName(product.name));
+          // With exact ids available, a card left over by them is usually one
+          // TCGplayer doesn't sell on its own, and a loosely-named product is a
+          // different item ("… (Display Commander) - Thick Stock") — don't borrow its price.
+          if (loose && game.productIds) continue;
+          if (!claim(product.productId, card.id, finishes)) continue;
+          if (loose) looseMatches.push(`${card.name} #${card.collectorNumber} ← ${product.name}`);
+        }
+      }
     }
-  }
+  };
+  runPass(false);
+  if (splitsByFinish) runPass(true);
 
   const rows: Prisma.PriceCreateManyInput[] = [];
   for (const group of fetched) {
     for (const price of group.prices) {
-      const cardId = cardByProduct.get(price.productId);
-      if (!cardId) continue;
-      rows.push({
-        cardId,
-        source: PRICE_SOURCE,
-        subType: price.subTypeName ?? "",
-        low: toDecimal(price.lowPrice),
-        average: toDecimal(price.midPrice),
-        high: toDecimal(price.highPrice),
-        market: toDecimal(price.marketPrice),
-        currency: CURRENCY,
-        externalId: String(price.productId),
-      });
+      const subType = price.subTypeName ?? "";
+      for (const { cardId, finishes } of claimsByProduct.get(price.productId) ?? []) {
+        if (finishes && !finishes(subType.toLowerCase())) continue;
+        rows.push({
+          cardId,
+          source: PRICE_SOURCE,
+          subType,
+          low: toDecimal(price.lowPrice),
+          average: toDecimal(price.midPrice),
+          high: toDecimal(price.highPrice),
+          market: toDecimal(price.marketPrice),
+          currency: CURRENCY,
+          externalId: String(price.productId),
+        });
+      }
     }
   }
-  const productsMatched = cardByProduct.size;
+  const productsMatched = claimsByProduct.size;
 
   const data = rows;
   const tcgCards = { card: { tcgId: tcg.id } };

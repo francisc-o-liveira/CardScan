@@ -31,7 +31,15 @@ Phase 1 implements the full schema up front (so later phases don't need destruct
 
 tcgcsv refreshes once a day and asks that each price file be requested at most once per 24 hours — run the sync daily, not more.
 
-Coverage on 2026-09-23: Pokémon 96.5% of cards, Lorcana 93%, Magic 89%, Star Wars 69%, One Piece 66%, Yu-Gi-Oh! 55%, Flesh and Blood 12%, Digimon 0%. Unpriced Pokémon cards are mostly trainer kits (TCGplayer sells both decks as one group with repeating numbers). Flesh and Blood stores several rows per collector number (edition/foiling), which the number+name matcher treats as ambiguous; Digimon's group names don't match ours yet — both need game-specific matching.
+Per-game differences live in `apps/api/src/providers/tcgplayer/gameRules.ts` and the `PRICE_GAMES` config:
+
+- **Game-wide numbers** (Yu-Gi-Oh!, Digimon, One Piece, Flesh and Blood): collector numbers are unique across the game, so products match against every card, not one set — TCGplayer's groups don't line up with our sets there (Digimon's "Release Special Booster 1.0" holds BT1–BT3). The group's set, when it has one, only breaks ties between a card and its reprint (One Piece `_r1`).
+- **One product, several of our cards**: Flesh and Blood keeps a row per `edition-foiling[-art]` and Star Wars a separate `F` card per foil, where TCGplayer sells one product priced per finish. Each of our rows takes only its finish ("1st Edition Rainbow Foil", "Foil"); Magic's ★ printings (7th–9th Edition foils) likewise take their card's Foil price. A second, lenient pass lets Flesh and Blood promo rows ignore art/edition labels TCGplayer doesn't print.
+- **Tie-breaks on a shared number**: exact name ("Kaido & Linlin (Parallel)"), then rarity — Yu-Gi-Oh! prints one number in several rarities, and TCGplayer's "Prismatic Ultimate Rare" is our "Ultimate Rare".
+- **Groups spanning sets**: Lorcana's single "Disney Lorcana Promo Cards" group covers our P1–P4 and event promo sets (`groupSets`); Star Wars promo lines are aliased by name.
+- Responses are cached for 20 hours in `apps/api/storage/tcgcsv-cache` (`TCGPLAYER_CACHE_DIR`), so re-running a sync never re-downloads.
+
+Coverage on 2026-09-23: Lorcana 98.3% of cards, Digimon 97.7%, One Piece 96.7%, Pokémon 96.6%, Flesh and Blood 94.5%, Yu-Gi-Oh! 93.9%, Magic 90.9%, Star Wars 81.3%. What's left is mostly printings TCGplayer doesn't sell: Pokémon trainer kits (both decks as one group with repeating numbers), Magic's Salvat/Foreign Black Border/Art Series sets, Yu-Gi-Oh!'s set-less cards and European-only prints, and Star Wars' yearly promo sets.
 
 ## Pokémon catalog sync
 

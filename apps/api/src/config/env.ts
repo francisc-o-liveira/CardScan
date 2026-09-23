@@ -27,6 +27,8 @@ const envSchema = z.object({
     .default("https://raw.githubusercontent.com/the-fab-cube/flesh-and-blood-cards/develop/json/english"),
   // Daily mirror of TCGplayer's catalog + market prices (https://tcgcsv.com)
   TCGPLAYER_PRICES_URL: z.string().min(1).default("https://tcgcsv.com/tcgplayer"),
+  /** tcgcsv responses are cached here for ~a day — tcgcsv asks for one fetch per file per 24h. */
+  TCGPLAYER_CACHE_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage/tcgcsv-cache")),
   ASSETS_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage")),
   API_PUBLIC_URL: z.string().min(1).default("http://localhost:4100"),
   /** Card recognition data: the downloaded model and the visual index of the catalog. */
