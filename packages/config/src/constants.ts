@@ -113,8 +113,9 @@ export const FEATURE_FLAGS = {
   ENABLE_DECKS: false,
   ENABLE_PRICE_ALERTS: false,
   ENABLE_AI_RECOGNITION: false,
-  /** Collection/wishlist writes need API routes that don't exist yet. */
-  ENABLE_COLLECTION: false,
+  /** /api/collection: add, edit and remove copies, with totals for Home and Profile. */
+  ENABLE_COLLECTION: true,
+  /** Wishlist writes need API routes that don't exist yet. */
   ENABLE_WISHLIST: false,
   /** Camera recognition: POST /api/scans plus the index built by `recognition:index`. */
   ENABLE_SCANNING: true,

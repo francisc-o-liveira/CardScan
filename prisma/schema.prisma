@@ -198,7 +198,8 @@ model CollectionItem {
   quantity      Int           @default(1)
   condition     CardCondition @default(NM)
   language      Language      @default(EN)
-  variant       String?
+  /// Empty rather than NULL so the unique key below applies: Postgres treats NULLs as distinct.
+  variant       String        @default("")
   notes         String?
   purchasePrice Decimal?      @db.Decimal(10, 2)
   purchaseDate  DateTime?

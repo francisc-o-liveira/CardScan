@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, HelpCircle, ScanLine, Search } from "lucide-react";
+import { HelpCircle, Plus, ScanLine, Search } from "lucide-react";
 import { SCAN_CONFIDENT } from "@cardscan/config";
 import type { CatalogCard, Scan, TcgSlug } from "@cardscan/types";
 import { Button } from "@/components/ui/Button";
@@ -67,8 +67,8 @@ export function ScanResult({ scan, confirming, onConfirm, onRetry, onEnterManual
         <p className="mt-2 text-meta text-faint">{Math.round((scan.confidence ?? 0) * 100)}% sure</p>
         <div className="mt-5 flex flex-col gap-2.5">
           <Button variant="primary" size="lg" block isLoading={confirming} onClick={() => onConfirm(best.card)}>
-            <Check className="h-[1.1rem] w-[1.1rem]" aria-hidden />
-            That&apos;s my card
+            <Plus className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+            Add to collection
           </Button>
           <Button variant="outline" size="lg" block onClick={() => setShowAll(true)}>
             Not this card
@@ -82,7 +82,7 @@ export function ScanResult({ scan, confirming, onConfirm, onRetry, onEnterManual
     <div className="rounded-hero border border-hairline bg-base-200 p-5">
       <h2 className="text-section font-semibold">Which card is it?</h2>
       <p className="mt-1 text-meta text-muted">
-        {confident ? "Pick the card you scanned." : "CardScan isn't sure. Pick the card you scanned."}
+        {confident ? "Pick the card you scanned to add it." : "CardScan isn't sure. Pick the card you scanned to add it."}
       </p>
       <ul className="mt-4 flex flex-col gap-2">
         {(showAll ? others : scan.candidates).map(({ card }) => (

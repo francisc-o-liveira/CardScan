@@ -58,8 +58,8 @@ export function ScanResult({ scan, confirming, onConfirm, onRetry, onEnterManual
         <Text style={styles.confidence}>{Math.round((scan.confidence ?? 0) * 100)}% sure</Text>
         <View style={styles.actions}>
           <Button
-            label="That's my card"
-            icon="checkmark"
+            label="Add to collection"
+            icon="add"
             variant="primary"
             isLoading={confirming}
             onPress={() => onConfirm(best.card)}
@@ -74,7 +74,7 @@ export function ScanResult({ scan, confirming, onConfirm, onRetry, onEnterManual
     <View style={styles.panel}>
       <Text style={styles.listTitle}>Which card is it?</Text>
       <Text style={styles.listHint}>
-        {confident ? "Pick the card you scanned." : "CardScan isn't sure. Pick the card you scanned."}
+        {confident ? "Pick the card you scanned to add it." : "CardScan isn't sure. Pick the card you scanned to add it."}
       </Text>
       <View style={styles.list}>
         {(showAll ? others : scan.candidates).map(({ card }) => (

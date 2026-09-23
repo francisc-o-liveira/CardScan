@@ -12,7 +12,8 @@ import { CardRail } from "@/components/CardRail";
 import { Button } from "@/components/Button";
 import { useLatestSetCards } from "@/hooks/useCatalog";
 import { LinearGradient } from "expo-linear-gradient";
-import { CAPABILITIES } from "@cardscan/config";
+import { CAPABILITIES, SUPPORTED_TCGS, TCG_COLORS, TCG_SHORT_LABELS } from "@cardscan/config";
+import { useCollectionSummary } from "@/hooks/useCollection";
 import { GamesGrid } from "@/components/GamesGrid";
 
 interface QuickAction {
@@ -40,6 +41,10 @@ export function HomeScreen() {
   const C = useColors();
   const styles = useMemo(() => createStyles(C), [C]);
   const { user } = useAuth();
+  const { data: summary } = useCollectionSummary();
+  const totalCards = summary?.totalCards ?? 0;
+  const perGame = summary?.perGame ?? {};
+  const isEmpty = totalCards === 0;
   const pokemon = useLatestSetCards("pokemon", 10);
   const magic = useLatestSetCards("magic", 10);
 
@@ -56,10 +61,29 @@ export function HomeScreen() {
             style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
           />
           <Text style={styles.greeting}>Welcome back, {user?.username}</Text>
-          <Text style={styles.heroTitle}>Your collection starts with one scan.</Text>
-          <Text style={styles.heroBody}>
-            Point your camera at a card and CardScan identifies it — name, set and number — then files it away in your collection.
-          </Text>
+          {/* Same two states as the web CollectionHero: a pitch when empty, the totals once there are cards. */}
+          {isEmpty ? (
+            <>
+              <Text style={styles.heroTitle}>Your collection starts with one scan.</Text>
+              <Text style={styles.heroBody}>
+                Point your camera at a card and CardScan identifies it — name, set and number — then files it away in your collection.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.total}>{totalCards.toLocaleString()}</Text>
+              <Text style={styles.heroBody}>cards in your collection</Text>
+              <View style={styles.perGame}>
+                {SUPPORTED_TCGS.filter((slug) => (perGame[slug] ?? 0) > 0).map((slug) => (
+                  <View key={slug} style={styles.perGameItem}>
+                    <View style={[styles.perGameDot, { backgroundColor: TCG_COLORS[slug] }]} />
+                    <Text style={styles.perGameLabel}>{TCG_SHORT_LABELS[slug]}</Text>
+                    <Text style={styles.perGameValue}>{(perGame[slug] ?? 0).toLocaleString()}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
           <View style={styles.heroActions}>
             <View style={styles.heroAction}>
               <Button
@@ -71,10 +95,10 @@ export function HomeScreen() {
             </View>
             <View style={styles.heroAction}>
               <Button
-                label="Explore cards"
-                icon="compass-outline"
+                label={isEmpty ? "Explore cards" : "View collection"}
+                icon={isEmpty ? "compass-outline" : "layers-outline"}
                 variant="secondary"
-                onPress={() => router.push("/(tabs)/discover")}
+                onPress={() => router.push(isEmpty ? "/(tabs)/discover" : "/(tabs)/collection")}
               />
             </View>
           </View>
@@ -168,14 +192,22 @@ const createStyles = (C: Palette) => StyleSheet.create({
     lineHeight: 34,
     letterSpacing: -0.5,
   },
+  total: { marginTop: 6, color: C.baseContent, fontSize: 48, fontWeight: "700", lineHeight: 52, letterSpacing: -1 },
+  perGame: { marginTop: 14, flexDirection: "row", flexWrap: "wrap", gap: 16 },
+  perGameItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  perGameDot: { width: 8, height: 8, borderRadius: 4 },
+  perGameLabel: { color: C.baseContentMuted, fontSize: T.meta },
+  perGameValue: { color: C.baseContent, fontSize: T.meta, fontWeight: "700" },
   heroBody: {
     marginTop: 8,
     color: C.baseContentMuted,
     fontSize: T.body,
     lineHeight: 21,
   },
-  heroActions: { marginTop: 18, flexDirection: "row", gap: 12 },
-  heroAction: { flex: 1 },
+  // Buttons size to their label and share the row; when both don't fit, the second wraps below instead of
+  // breaking its label over two lines.
+  heroActions: { marginTop: 18, flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  heroAction: { flexGrow: 1 },
 
   actionsGrid: {
     marginTop: 20,

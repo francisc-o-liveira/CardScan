@@ -7,6 +7,7 @@ import { ArrowLeft, SearchX } from "lucide-react";
 import type { TcgSlug } from "@cardscan/types";
 import { PageShell } from "@/components/layout/PageShell";
 import { CardGrid } from "@/components/cards/CardGrid";
+import { useOwned } from "@/hooks/useCollection";
 import { SetSymbol } from "@/components/cards/SetSymbol";
 import { GameBadge } from "@/components/ui/Badge";
 import { SearchField } from "@/components/ui/SearchField";
@@ -48,6 +49,7 @@ export default function SetDetailPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const owned = useOwned(visible.map((card) => card.id));
 
   const onQueryChange = (value: string) => {
     setQuery(value);
@@ -122,7 +124,7 @@ export default function SetDetailPage() {
 
           {visible.length > 0 ? (
             <>
-              <CardGrid cards={visible} showSet={false} />
+              <CardGrid cards={visible} showSet={false} quantities={owned} />
               <div className="mt-8">
                 <Pagination
                   page={safePage}

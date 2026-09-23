@@ -10,10 +10,13 @@ export function CardGrid({
   cards,
   showGame,
   showSet,
+  quantities,
 }: {
   cards: CatalogCard[];
   showGame?: boolean;
   showSet?: boolean;
+  /** Copies owned per card id, shown as a badge on the tile. */
+  quantities?: Record<string, number>;
 }) {
   return (
     <div
@@ -26,6 +29,7 @@ export function CardGrid({
           card={card}
           showGame={showGame}
           showSet={showSet}
+          quantity={quantities?.[card.id]}
           priority={index < 6}
         />
       ))}

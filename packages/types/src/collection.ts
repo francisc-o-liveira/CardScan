@@ -1,28 +1,36 @@
-import type { Card } from "./card";
-import type { CardLanguage } from "./card";
+import type { CardLanguage, CatalogCard } from "./card";
+import type { TcgSlug } from "./tcg";
 
 export type CardCondition = "NM" | "LP" | "MP" | "HP" | "DMG";
 
+/** One group of identical copies: same card, condition, language and variant. */
 export interface CollectionItem {
   id: string;
-  userId: string;
   cardId: string;
-  card?: Card;
   quantity: number;
   condition: CardCondition;
   language: CardLanguage;
   variant: string | null;
   notes: string | null;
-  purchasePrice: number | null;
-  purchaseDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CollectionStats {
+/** A card the user owns, with every group of copies of it. Returned by GET /api/collection. */
+export interface CollectionEntry {
+  card: CatalogCard;
+  /** Copies across all conditions and languages. */
+  quantity: number;
+  items: CollectionItem[];
+}
+
+/** Totals for Home and Profile. Returned by GET /api/collection/summary. */
+export interface CollectionSummary {
+  /** Copies, counting duplicates. */
   totalCards: number;
+  /** Distinct cards. */
   uniqueCards: number;
-  estimatedValue: number;
   totalSets: number;
-  wishlistCount: number;
+  perGame: Partial<Record<TcgSlug, number>>;
+  scans: number;
 }

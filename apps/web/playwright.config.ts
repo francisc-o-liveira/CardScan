@@ -15,6 +15,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
+    launchOptions: { executablePath: "C:/Users/Manuel/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe" },
     baseURL: "http://localhost:3001",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

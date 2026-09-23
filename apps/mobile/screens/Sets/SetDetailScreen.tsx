@@ -13,6 +13,7 @@ import { CardTile } from "@/components/CardTile";
 import { EmptyState } from "@/components/EmptyState";
 import { SetSymbol } from "@/components/SetSymbol";
 import { useSet } from "@/hooks/useCatalog";
+import { useOwned } from "@/hooks/useCollection";
 import { formatLongDate } from "@/utils/format";
 
 const COLUMNS = 2;
@@ -40,6 +41,7 @@ export function SetDetailScreen() {
   }, [set?.cards, query]);
 
   const visible = filtered.slice(0, visibleCount);
+  const owned = useOwned(visible.map((card) => card.id));
   const released = formatLongDate(set?.releaseDate);
   const backTarget = "/(tabs)/discover";
 
@@ -110,7 +112,12 @@ export function SetDetailScreen() {
           ListHeaderComponent={header}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <CardTile card={item} showSet={false} onPress={() => router.push(`/cards/${item.id}`)} />
+            <CardTile
+              card={item}
+              showSet={false}
+              quantity={owned[item.id]}
+              onPress={() => router.push(`/cards/${item.id}`)}
+            />
           )}
           onEndReached={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, filtered.length))}
           onEndReachedThreshold={0.6}

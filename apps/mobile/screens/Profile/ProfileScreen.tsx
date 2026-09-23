@@ -6,21 +6,13 @@ import type { ComponentProps } from "react";
 import { R, S, T, MIN_TOUCH, type Palette, GUTTER } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
+import { useCollectionSummary } from "@/hooks/useCollection";
+import { CAPABILITIES } from "@cardscan/config";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { Button } from "@/components/Button";
 import { formatMonthYear } from "@/utils/format";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
-/**
- * Future / Requires Backend Support: totals stay at zero until /collection
- * exists. Shown with a note rather than hidden, so the screen doesn't look
- * broken and no figures are invented.
- */
-const STATS: { label: string; value: number; icon: ComponentProps<typeof Ionicons>["name"] }[] = [
-  { label: "Cards", value: 0, icon: "layers-outline" },
-  { label: "Sets", value: 0, icon: "albums-outline" },
-  { label: "Scans", value: 0, icon: "scan-outline" },
-];
 
 interface Row {
   label: string;
@@ -40,6 +32,12 @@ export function ProfileScreen() {
   const C = useColors();
   const styles = useMemo(() => createStyles(C), [C]);
   const { user, logout } = useAuth();
+  const { data: summary } = useCollectionSummary();
+  const STATS: { label: string; value: number; icon: ComponentProps<typeof Ionicons>["name"] }[] = [
+    { label: "Cards", value: summary?.totalCards ?? 0, icon: "layers-outline" },
+    { label: "Sets", value: summary?.totalSets ?? 0, icon: "albums-outline" },
+    { label: "Scans", value: summary?.scans ?? 0, icon: "scan-outline" },
+  ];
   const joined = formatMonthYear(user?.createdAt);
   const avatarUri = resolveImageUrl(user?.avatarUrl);
 
@@ -74,7 +72,9 @@ export function ProfileScreen() {
             </View>
           ))}
         </View>
-        <Text style={styles.note}>These count up once collection tracking ships.</Text>
+        {!CAPABILITIES.collection ? (
+          <Text style={styles.note}>These count up once collection tracking ships.</Text>
+        ) : null}
 
         <View style={styles.rows}>
           {ROWS.map((row, index) => (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, Image, Pressable, Modal, ScrollView, Share, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,6 +14,9 @@ import { CardRail } from "@/components/CardRail";
 import { EmptyState } from "@/components/EmptyState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useCard, useCards } from "@/hooks/useCatalog";
+import { useAddToCollection, useCardInCollection } from "@/hooks/useCollection";
+import { OwnedCopies } from "@/components/OwnedCopies";
+import { apiErrorMessage } from "@/utils/apiError";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
 const HERO_WIDTH = 288;
@@ -38,7 +41,28 @@ export function CardDetailScreen() {
   const styles = useMemo(() => createStyles(C), [C]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: card, isLoading, isError, refetch } = useCard(id);
+  const owned = useCardInCollection(id);
+  const addToCollection = useAddToCollection();
+  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
   const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 3000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  /** One Near Mint English copy per press, adjustable below in "In your collection". */
+  const add = () => {
+    if (!card) return;
+    addToCollection.mutate(
+      { cardId: card.id },
+      {
+        onSuccess: () => setFeedback({ text: `✓ ${card.name} added to your collection`, ok: true }),
+        onError: (error) => setFeedback({ text: apiErrorMessage(error, "Couldn't add the card. Try again."), ok: false }),
+      },
+    );
+  };
 
   // Related = the rest of this card's set, sampled across it so it is not runs of one card's alternate prints.
   const related = useCards({ setId: card?.setId, limit: 100 }, Boolean(card?.setId));
@@ -125,8 +149,8 @@ export function CardDetailScreen() {
                   label="Add to collection"
                   icon="add"
                   variant="primary"
-                  onPress={() => undefined}
-                  disabled={!CAPABILITIES.collection}
+                  isLoading={addToCollection.isPending}
+                  onPress={add}
                 />
               </View>
               <Button
@@ -141,11 +165,12 @@ export function CardDetailScreen() {
               <Button label="Share" icon="share-outline" variant="ghost" onPress={share} />
             </View>
           </View>
-          {!CAPABILITIES.collection && (
-            <Text style={styles.note}>
-              Saving cards arrives with the collection release. You can browse and search the full catalog today.
-            </Text>
-          )}
+          {/* The phone's counterpart of the web toast. */}
+          {feedback ? (
+            <Text style={[styles.note, feedback.ok ? styles.noteOk : styles.noteError]}>{feedback.text}</Text>
+          ) : null}
+
+          {owned.data ? <OwnedCopies entry={owned.data} /> : null}
 
           <Text style={styles.sectionTitle}>Details</Text>
           <View style={styles.details}>
@@ -222,6 +247,8 @@ const createStyles = (C: Palette) => StyleSheet.create({
   actionsRow: { flexDirection: "row", gap: 10 },
   shareRow: { alignSelf: "flex-start" },
   note: { marginTop: 10, color: C.baseContentFaint, fontSize: T.meta, lineHeight: 18 },
+  noteOk: { color: C.success },
+  noteError: { color: C.error },
   sectionTitle: { marginTop: S["2xl"], color: C.baseContent, fontSize: T.section, fontWeight: "700" },
   details: { marginTop: 4 },
   detailRow: {

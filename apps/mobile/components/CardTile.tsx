@@ -110,7 +110,8 @@ function CardTileComponent({
 export const CardTile = memo(CardTileComponent);
 
 const createStyles = (C: Palette) => StyleSheet.create({
-  fluid: { flex: 1, padding: 6 },
+  // Two-column grids: half the row at most, so a lone last card keeps its size instead of stretching.
+  fluid: { flex: 1, maxWidth: "50%", padding: 6 },
   pressed: { opacity: 0.8 },
   frame: {
     borderRadius: R.sm + 2,

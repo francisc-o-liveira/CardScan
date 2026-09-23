@@ -58,6 +58,20 @@ return the caller's own scans.
 | GET    | `/scans/:id`          | One scan. |
 | POST   | `/scans/:id/confirm`  | `{ cardId }` — the card the photo really showed (any catalog card, not only a candidate). Also records it in `RecognitionFeedback`. |
 
+## Collection
+
+The signed-in user's cards. A card can have several groups of copies (one per condition and language);
+adding copies that match an existing group adds to its quantity instead of creating a new row.
+
+| Method | Path                         | Notes |
+| ------ | ---------------------------- | ----- |
+| GET    | `/collection`                | Owned cards with their copies and total quantity. Paginated (`page`, `limit`), filterable by `query` (name), `tcg`, `setId`, `condition`. |
+| GET    | `/collection/summary`        | `totalCards` (copies), `uniqueCards`, `totalSets`, `perGame`, `scans` — for Home and Profile. |
+| GET    | `/collection/cards/:cardId`  | The user's copies of one card, or `null`. |
+| POST   | `/collection/items`          | `{ cardId, quantity = 1, condition = "NM", language = "en", scanId? }`. With `scanId`, also confirms that scan as the card (and records the feedback). |
+| PATCH  | `/collection/items/:id`      | `{ quantity?, condition?, language? }`. `quantity: 0` removes the group; moving it onto an existing condition + language merges the two. Returns the card's copies, or `null` when none are left. |
+| DELETE | `/collection/items/:id`      | Removes a group of copies. |
+
 ## Images
 
 | Method | Path                  | Notes |
@@ -66,4 +80,4 @@ return the caller's own scans.
 
 ## Planned (later phases)
 
-`/api/collection`, `/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.
+`/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.

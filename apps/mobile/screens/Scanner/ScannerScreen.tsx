@@ -14,14 +14,16 @@ import { CardRow } from "@/components/CardRow";
 import { Viewfinder } from "@/components/scan/Viewfinder";
 import { ScanResult } from "@/components/scan/ScanResult";
 import { useCards } from "@/hooks/useCatalog";
-import { useCreateScan, useConfirmScan } from "@/hooks/useScans";
+import { useCreateScan } from "@/hooks/useScans";
+import { useAddToCollection } from "@/hooks/useCollection";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiError";
 
 /**
  * Identify a card: point the camera at it, or find it by name. Batch-friendly, as docs/design-system.md
- * asks: scan, confirm, and the viewfinder re-arms on the same screen for the next card. Every confirmation
- * (including a card picked by name after "Enter manually") is recorded against the scan as feedback.
+ * asks: scan, add to the collection, and the viewfinder re-arms on the same screen for the next card.
+ * Every card added from a scan (including one picked by name after "Enter manually") also confirms the
+ * scan, which records the correction as recognition feedback.
  */
 export function ScannerScreen() {
   const C = useColors();
@@ -35,7 +37,7 @@ export function ScannerScreen() {
   const searchInput = useRef<TextInput>(null);
 
   const createScan = useCreateScan();
-  const confirmScan = useConfirmScan();
+  const addToCollection = useAddToCollection();
 
   const debounced = useDebouncedValue(query);
   const hasQuery = debounced.trim().length >= 2;
@@ -63,8 +65,9 @@ export function ScannerScreen() {
       router.push(`/cards/${card.id}`);
       return;
     }
-    confirmScan.mutate(
-      { scanId, cardId: card.id },
+    // Adds the card and confirms the scan in one request; the viewfinder then re-arms for the next card.
+    addToCollection.mutate(
+      { cardId: card.id, scanId },
       {
         onSuccess: () => {
           setRecorded(card);
@@ -89,7 +92,7 @@ export function ScannerScreen() {
           <View style={styles.recorded}>
             <Ionicons name="checkmark-circle" size={20} color={C.success} />
             <Text style={styles.recordedText} numberOfLines={1}>
-              {recorded.name} recorded
+              {recorded.name} added to your collection
             </Text>
             <Pressable onPress={() => router.push(`/cards/${recorded.id}`)} accessibilityRole="link" hitSlop={8}>
               <Text style={styles.link}>View card</Text>
@@ -110,7 +113,7 @@ export function ScannerScreen() {
         ) : scan ? (
           <ScanResult
             scan={scan}
-            confirming={confirmScan.isPending}
+            confirming={addToCollection.isPending}
             onConfirm={confirm}
             onRetry={rearm}
             onEnterManually={enterManually}

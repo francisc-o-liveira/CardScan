@@ -17,14 +17,16 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCards } from "@/hooks/useCatalog";
-import { useCreateScan, useConfirmScan } from "@/hooks/useScans";
+import { useCreateScan } from "@/hooks/useScans";
+import { useAddToCollection } from "@/hooks/useCollection";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorMessage } from "@/lib/api-error";
 
 /**
  * Identify a card: point the camera at it, or find it by name. Batch-friendly, as docs/design-system.md
- * asks: scan, confirm, and the viewfinder re-arms on the same screen for the next card. Every confirmation
- * (including a card picked by name after "Enter manually") is recorded against the scan as feedback.
+ * asks: scan, add to the collection, and the viewfinder re-arms on the same screen for the next card.
+ * Every card added from a scan (including one picked by name after "Enter manually") also confirms the
+ * scan, which records the correction as recognition feedback.
  */
 export default function ScanPage() {
   const router = useRouter();
@@ -37,7 +39,7 @@ export default function ScanPage() {
   const searchInput = useRef<HTMLInputElement>(null);
 
   const createScan = useCreateScan();
-  const confirmScan = useConfirmScan();
+  const addToCollection = useAddToCollection();
 
   const debounced = useDebouncedValue(query);
   const hasQuery = debounced.trim().length >= 2;
@@ -65,8 +67,9 @@ export default function ScanPage() {
       router.push(`/cards/${card.id}`);
       return;
     }
-    confirmScan.mutate(
-      { scanId, cardId: card.id },
+    // Adds the card and confirms the scan in one request; the viewfinder then re-arms for the next card.
+    addToCollection.mutate(
+      { cardId: card.id, scanId },
       {
         onSuccess: () => {
           setRecorded(card);
@@ -92,7 +95,7 @@ export default function ScanPage() {
         {recorded && (
           <div className="flex items-center gap-2.5 rounded-panel border border-success/25 bg-success/10 px-4 py-3">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-success" aria-hidden />
-            <p className="min-w-0 flex-1 truncate text-body font-medium">{recorded.name} recorded</p>
+            <p className="min-w-0 flex-1 truncate text-body font-medium">{recorded.name} added to your collection</p>
             <Link href={`/cards/${recorded.id}`} className="shrink-0 text-meta font-semibold text-primary hover:underline">
               View card
             </Link>
@@ -120,7 +123,7 @@ export default function ScanPage() {
         ) : scan ? (
           <ScanResult
             scan={scan}
-            confirming={confirmScan.isPending}
+            confirming={addToCollection.isPending}
             onConfirm={confirm}
             onRetry={rearm}
             onEnterManually={enterManually}

@@ -8,21 +8,16 @@ import { SECONDARY_NAV } from "@/components/layout/navConfig";
 import { Button } from "@/components/ui/Button";
 import { CAPABILITIES } from "@/lib/features";
 import { formatMonthYear } from "@/lib/format";
-
-/**
- * Collection totals.
- *
- * Future / Requires Backend Support: no /collection endpoint, so these read
- * zero and say why rather than displaying invented figures.
- */
-const STATS = [
-  { label: "Cards", value: 0, icon: Layers },
-  { label: "Sets", value: 0, icon: Boxes },
-  { label: "Scans", value: 0, icon: ScanLine },
-];
+import { useCollectionSummary } from "@/hooks/useCollection";
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const { data: summary } = useCollectionSummary();
+  const STATS = [
+    { label: "Cards", value: summary?.totalCards ?? 0, icon: Layers },
+    { label: "Sets", value: summary?.totalSets ?? 0, icon: Boxes },
+    { label: "Scans", value: summary?.scans ?? 0, icon: ScanLine },
+  ];
   const joined = formatMonthYear(user?.createdAt);
 
   return (

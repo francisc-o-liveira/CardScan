@@ -32,11 +32,7 @@ interface CardTileProps {
   showSet?: boolean;
   /** Off in dense grids where rarity would be a fourth line of small print. */
   showRarity?: boolean;
-  /**
-   * Copies owned. Future / Requires Backend Support — there is no collection
-   * endpoint yet, so nothing passes this today. The slot exists so "do I own
-   * this?" becomes visible the moment the API lands.
-   */
+  /** Copies owned, shown as a badge on the artwork. */
   quantity?: number;
   /** Handle the press yourself (a picker, say) instead of linking to the card. */
   onClick?: () => void;

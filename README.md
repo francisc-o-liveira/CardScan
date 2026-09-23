@@ -16,7 +16,9 @@ CardScan is a cross-platform TCG card recognition and collection management plat
 
 **Phase 3, the scanner, has landed.** Point the camera at a card on web or mobile and CardScan recognises it against the imported catalog, locally and in TypeScript — see [`docs/recognition.md`](docs/recognition.md). Build the index once with `pnpm recognition:index`.
 
-Collection, wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
+**Phase 4, the collection, has landed.** Add cards from a scan or a card page, keep copies per condition and language, and see the totals on Home and Profile — on web and mobile.
+
+Wishlist, decks, and pricing are not implemented yet — see [Roadmap](#roadmap). The UI marks each of those honestly rather than faking it: no placeholder numbers, and every unbuilt feature points at a path that does work.
 
 ## Tech stack
 
@@ -153,7 +155,7 @@ Built in phases — see [`docs/architecture.md`](docs/architecture.md) for detai
 1. **Foundation** — monorepo, auth, DB schema, web/mobile shell
 2. **Card database** — Pokémon ([TCGdex](https://tcgdex.dev), `pnpm sync:pokemon`), Magic ([Scryfall](https://scryfall.com/docs/api), `pnpm sync:magic`) and Yu-Gi-Oh! ([YGOPRODeck](https://ygoprodeck.com/api-guide/), `pnpm sync:yugioh`) catalogs are imported, with read endpoints (`/api/tcgs`, `/api/sets`, `/api/cards`) and a full browse/search UI on web and mobile
 3. **Scanner** — camera capture on web and mobile, a local recognition pipeline (card detection, visual matching, confidence), scan history and correction feedback (`pnpm recognition:index`)
-4. **Collection** — add/remove cards, quantities, conditions, statistics
+4. **Collection** — add from a scan or a card page, quantities per condition and language, search and filters, totals on Home and Profile
 5. **Wishlist**
 6. **Pricing** — price providers, history, collection valuation
 7. **Decks**

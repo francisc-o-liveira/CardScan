@@ -11,6 +11,7 @@ import { GameSwitcher, type GameFilter } from "@/components/ui/GameSwitcher";
 import { FilterChip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { CardGrid } from "@/components/cards/CardGrid";
+import { useOwned } from "@/hooks/useCollection";
 import { Pagination } from "@/components/ui/Pagination";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -75,6 +76,7 @@ function SearchContent() {
   );
 
   const results = data?.data ?? [];
+  const owned = useOwned(results.map((card) => card.id));
   const pagination = data?.pagination;
 
   const onQueryChange = (value: string) => {
@@ -226,7 +228,7 @@ function SearchContent() {
             </span>{" "}
             {pagination?.total === 1 ? "card" : "cards"} found
           </p>
-          <CardGrid cards={results} showGame={filters.game === "all"} />
+          <CardGrid cards={results} showGame={filters.game === "all"} quantities={owned} />
           {pagination && (
             <div className="mt-8">
               <Pagination

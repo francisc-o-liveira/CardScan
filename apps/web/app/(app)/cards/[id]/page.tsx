@@ -27,6 +27,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { OwnedCopies } from "@/components/collection/OwnedCopies";
+import { useAddToCollection, useCardInCollection } from "@/hooks/useCollection";
+import { getErrorMessage } from "@/lib/api-error";
 import { useCard, useCards } from "@/hooks/useCatalog";
 import { CAPABILITIES } from "@/lib/features";
 
@@ -54,9 +57,11 @@ export default function CardDetailPage() {
   const router = useRouter();
   const cardId = params?.id;
   const toast = useToast();
+  const addToCollection = useAddToCollection();
   const [zoomed, setZoomed] = useState(false);
 
   const { data: card, isLoading, isError, refetch } = useCard(cardId);
+  const owned = useCardInCollection(cardId);
 
   // Related = the rest of this card's set. Real data, and the association a
   // collector actually thinks in. Sampled across the set rather than taking the
@@ -151,18 +156,21 @@ export default function CardDetailPage() {
                 {card.collectorNumber && ` · #${card.collectorNumber}`}
               </p>
 
-              {/* One primary action, stated plainly. It is disabled rather than
-                  hidden: the path has to be obvious now, and it only needs the
-                  endpoint to work. */}
+              {/* One primary action, stated plainly: one Near Mint English copy per press,
+                  adjustable below in "In your collection". */}
               <div className="mt-7 flex flex-wrap items-center gap-2.5">
                 <Button
                   variant="primary"
                   size="lg"
-                  disabled={!CAPABILITIES.collection}
-                  title={
-                    CAPABILITIES.collection
-                      ? undefined
-                      : "Saving to your collection is not available yet"
+                  isLoading={addToCollection.isPending}
+                  onClick={() =>
+                    addToCollection.mutate(
+                      { cardId: card.id },
+                      {
+                        onSuccess: () => toast(`${card.name} added to your collection`),
+                        onError: (error) => toast(getErrorMessage(error, "Couldn't add the card. Try again.")),
+                      },
+                    )
                   }
                 >
                   <Plus className="h-[1.1rem] w-[1.1rem]" aria-hidden />
@@ -203,12 +211,7 @@ export default function CardDetailPage() {
                 </Button>
               </div>
 
-              {!CAPABILITIES.collection && (
-                <p className="mt-2.5 text-meta text-faint">
-                  Saving cards arrives with the collection release. You can browse and search the
-                  full catalog today.
-                </p>
-              )}
+              {owned.data && <OwnedCopies entry={owned.data} />}
 
               <section className="mt-9">
                 <h2 className="text-section font-semibold">Details</h2>

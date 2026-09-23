@@ -9,26 +9,22 @@ import { CollectionHero, type CollectionSummary } from "@/components/home/Collec
 import { QuickActions } from "@/components/home/QuickActions";
 import { GamesGrid } from "@/components/home/GamesGrid";
 import { useLatestSetCards } from "@/hooks/useLatestSetCards";
+import { useCollectionSummary } from "@/hooks/useCollection";
 import { CAPABILITIES } from "@/lib/features";
 
-/**
- * Collection totals.
- *
- * Future / Requires Backend Support: there is no /collection endpoint yet, so
- * this reports an empty collection rather than inventing figures. When the API
- * lands, swap this for the real query — the hero already renders both states.
- */
+/** Shown until the totals load, and on error: the hero's empty state, never invented figures. */
 const EMPTY_SUMMARY: CollectionSummary = { totalCards: 0, perGame: {} };
 
 export default function HomePage() {
   const { user } = useAuth();
+  const summary = useCollectionSummary();
   const pokemon = useLatestSetCards("pokemon", 12);
   const magic = useLatestSetCards("magic", 12);
 
   return (
     <PageShell>
       <div className="flex flex-col gap-10">
-        <CollectionHero username={user?.username ?? "collector"} summary={EMPTY_SUMMARY} />
+        <CollectionHero username={user?.username ?? "collector"} summary={summary.data ?? EMPTY_SUMMARY} />
 
         <section aria-labelledby="quick-actions">
           <h2 id="quick-actions" className="sr-only">

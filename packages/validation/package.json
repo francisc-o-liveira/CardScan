@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cardscan/config": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {

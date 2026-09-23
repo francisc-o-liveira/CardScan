@@ -23,6 +23,7 @@ import { CardTile } from "@/components/CardTile";
 import { EmptyState } from "@/components/EmptyState";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useInfiniteCards, useSets } from "@/hooks/useCatalog";
+import { useOwned } from "@/hooks/useCollection";
 
 /** After a reload or deep link there is no history to go back to, so fall back to Home. */
 const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)"));
@@ -49,6 +50,8 @@ export function CardDatabaseScreen() {
   });
 
   const items = useMemo(() => cards.data?.pages.flatMap((page) => page.data) ?? [], [cards.data]);
+  // The list is infinite: ask for the copies of the 200 most recent cards, which covers what is on screen.
+  const owned = useOwned(items.slice(-200).map((card) => card.id));
   const total = cards.data?.pages[0]?.pagination.total;
   const selectedSet = sets.data?.find((item) => item.id === setId);
 
@@ -66,7 +69,12 @@ export function CardDatabaseScreen() {
     setSetId("");
   };
 
-  const renderCard = useCallback(({ item }: { item: CatalogCard }) => <CardTile card={item} onPress={() => router.push(`/cards/${item.id}`)} />, []);
+  const renderCard = useCallback(
+    ({ item }: { item: CatalogCard }) => (
+      <CardTile card={item} quantity={owned[item.id]} onPress={() => router.push(`/cards/${item.id}`)} />
+    ),
+    [owned],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
