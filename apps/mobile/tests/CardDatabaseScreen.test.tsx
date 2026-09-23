@@ -99,7 +99,7 @@ describe("Card Database screen", () => {
     await screen.findByTestId("card-list");
     expect(screen.queryByLabelText("Filter by set")).toBeNull();
 
-    await fireEvent.press(await screen.findByLabelText("Magic: The Gathering"));
+    await fireEvent.press(await screen.findByLabelText("Magic"));
     await waitFor(() => expect(lastCall()).toMatchObject({ tcg: "magic", page: 1 }));
     expect(catalog.listSets).toHaveBeenCalledWith("magic");
     expect(screen.getByLabelText("Filter by set")).toBeTruthy();
@@ -108,7 +108,7 @@ describe("Card Database screen", () => {
   it("filters by set through the picker, and can search sets", async () => {
     await renderScreen();
     await screen.findByTestId("card-list");
-    await fireEvent.press(await screen.findByLabelText("Magic: The Gathering"));
+    await fireEvent.press(await screen.findByLabelText("Magic"));
     await fireEvent.press(await screen.findByLabelText("Filter by set"));
 
     await fireEvent.changeText(screen.getByLabelText("Search sets"), "zzz");
@@ -122,7 +122,7 @@ describe("Card Database screen", () => {
   it("clears the set filter when the TCG changes", async () => {
     await renderScreen();
     await screen.findByTestId("card-list");
-    await fireEvent.press(await screen.findByLabelText("Magic: The Gathering"));
+    await fireEvent.press(await screen.findByLabelText("Magic"));
     await fireEvent.press(await screen.findByLabelText("Filter by set"));
     await fireEvent.press(await screen.findByText("Limited Edition Alpha"));
     await waitFor(() => expect(lastCall()).toMatchObject({ setId: "s1" }));
@@ -186,10 +186,11 @@ describe("Card Database screen", () => {
     expect(router.replace).toHaveBeenCalledWith("/(tabs)");
   });
 
-  it("lists every TCG including Yu-Gi-Oh!", async () => {
+  it("lists every supported game, even those the API has no catalog for yet", async () => {
+    // The mocked API only knows Pokémon and Magic; the filter still offers all eight, like the web app.
     await renderScreen();
-    expect(await screen.findByLabelText("Yu-Gi-Oh!")).toBeTruthy();
-    expect(screen.getByLabelText("Pokémon")).toBeTruthy();
-    expect(screen.getByLabelText("All TCGs")).toBeTruthy();
+    for (const label of ["All TCGs", "Pokémon", "Magic", "Yu-Gi-Oh!", "Lorcana", "One Piece", "Digimon", "Star Wars", "Flesh & Blood"]) {
+      expect(await screen.findByLabelText(label)).toBeTruthy();
+    }
   });
 });

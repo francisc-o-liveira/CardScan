@@ -23,6 +23,24 @@ export function useSets(tcg?: TcgSlug, enabled = true) {
   });
 }
 
+export function useSet(id: string | undefined) {
+  return useQuery({
+    queryKey: ["catalog", "set", id ?? ""],
+    queryFn: () => api.catalog.getSet(id!),
+    staleTime: CATALOG_STALE_TIME,
+    enabled: Boolean(id),
+  });
+}
+
+export function useCard(id: string | undefined) {
+  return useQuery({
+    queryKey: ["catalog", "card", id ?? ""],
+    queryFn: () => api.catalog.getCard(id!),
+    staleTime: CATALOG_STALE_TIME,
+    enabled: Boolean(id),
+  });
+}
+
 export function useCards(params: ListCardsParams, enabled = true) {
   return useQuery({
     queryKey: ["catalog", "cards", params],

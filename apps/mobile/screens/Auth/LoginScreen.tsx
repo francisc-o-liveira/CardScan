@@ -1,4 +1,6 @@
-import { useState } from "react";
+import type { Palette } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,13 +14,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { loginSchema, type LoginInput } from "@cardscan/validation";
-import { COLORS } from "@cardscan/config";
 import { useAuth } from "@/providers/AuthProvider";
 
 export function LoginScreen() {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const { login } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -34,8 +37,8 @@ export function LoginScreen() {
   const onSubmit = async (values: LoginInput) => {
     setFormError(null);
     try {
+      // AuthLayout sends the signed-in user to the welcome screens the first time, Home afterwards.
       await login(values);
-      router.replace("/(tabs)");
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Unable to sign in");
     }
@@ -49,11 +52,14 @@ export function LoginScreen() {
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <View style={styles.logoBadge}>
-              <Ionicons name="scan-outline" size={28} color={COLORS.dark.primary} />
+            <View style={styles.brandRow}>
+              <View style={styles.logoBadge}>
+                <Ionicons name="scan-outline" size={18} color={C.primary} />
+              </View>
+              <Text style={styles.brandText}>CardScan</Text>
             </View>
-            <Text style={styles.title}>CardScan</Text>
-            <Text style={styles.subtitle}>Scan. Identify. Collect.</Text>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to pick up where you left off.</Text>
           </View>
 
           {formError && (
@@ -73,7 +79,7 @@ export function LoginScreen() {
                 keyboardType="email-address"
                 autoComplete="email"
                 placeholder="you@example.com"
-                placeholderTextColor={COLORS.dark.baseContentMuted}
+                placeholderTextColor={C.baseContentMuted}
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
@@ -91,8 +97,6 @@ export function LoginScreen() {
                 style={styles.input}
                 secureTextEntry
                 autoComplete="current-password"
-                placeholder="••••••••"
-                placeholderTextColor={COLORS.dark.baseContentMuted}
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
@@ -107,16 +111,16 @@ export function LoginScreen() {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color={COLORS.dark.primaryContent} />
+              <ActivityIndicator color={C.primaryContent} />
             ) : (
               <Text style={styles.buttonText}>Sign in</Text>
             )}
           </Pressable>
 
           <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+            <Text style={styles.footerText}>New to CardScan? </Text>
             <Link href="/(auth)/register" replace>
-              <Text style={styles.footerLink}>Create one</Text>
+              <Text style={styles.footerLink}>Create an account</Text>
             </Link>
           </View>
         </View>
@@ -125,51 +129,52 @@ export function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.dark.base100 },
+const createStyles = (C: Palette) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: C.base100 },
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
-  header: { alignItems: "center", marginBottom: 32, gap: 6 },
+  header: { alignItems: "flex-start", marginBottom: 32, gap: 6 },
   logoBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "rgba(91,124,250,0.15)",
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: C.primarySoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
-  title: { fontSize: 24, fontWeight: "600", color: COLORS.dark.baseContent },
-  subtitle: { fontSize: 14, color: COLORS.dark.baseContentMuted },
-  label: { fontSize: 13, color: COLORS.dark.baseContentMuted, marginBottom: 6, marginTop: 14 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
+  brandText: { color: C.baseContent, fontSize: 16, fontWeight: "700" },
+  title: { fontSize: 24, fontWeight: "600", color: C.baseContent },
+  subtitle: { fontSize: 14, color: C.baseContentMuted },
+  label: { fontSize: 13, color: C.baseContentMuted, marginBottom: 6, marginTop: 14 },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
-    backgroundColor: COLORS.dark.base200,
+    borderColor: C.border,
+    backgroundColor: C.base200,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: COLORS.dark.baseContent,
+    color: C.baseContent,
   },
-  fieldError: { color: COLORS.dark.error, fontSize: 12, marginTop: 4 },
+  fieldError: { color: C.error, fontSize: 12, marginTop: 4 },
   errorBanner: {
-    backgroundColor: "rgba(240,85,90,0.12)",
+    backgroundColor: `${C.error}1F`,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
   },
-  errorBannerText: { color: COLORS.dark.error, fontSize: 13 },
+  errorBannerText: { color: C.error, fontSize: 13 },
   button: {
-    backgroundColor: COLORS.dark.primary,
+    backgroundColor: C.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 24,
   },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { color: COLORS.dark.primaryContent, fontSize: 15, fontWeight: "600" },
+  buttonText: { color: C.primaryContent, fontSize: 15, fontWeight: "600" },
   footerRow: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
-  footerText: { color: COLORS.dark.baseContentMuted, fontSize: 13 },
-  footerLink: { color: COLORS.dark.primary, fontSize: 13, fontWeight: "600" },
+  footerText: { color: C.baseContentMuted, fontSize: 13 },
+  footerLink: { color: C.primary, fontSize: 13, fontWeight: "600" },
 });

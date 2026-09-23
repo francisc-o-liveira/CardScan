@@ -1,138 +1,125 @@
-import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { useMemo, useState } from "react";
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LIVE_TCGS } from "@cardscan/config";
-import { C, R, S, T, MIN_TOUCH, CARD_ASPECT } from "@/theme";
+import { LIVE_TCGS, TCG_LABELS } from "@cardscan/config";
+import type { TcgSlug } from "@cardscan/types";
+import { R, S, T, MIN_TOUCH, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
-import { CardTile } from "@/components/CardTile";
+import { SectionHeader } from "@/components/SectionHeader";
+import { CardRail } from "@/components/CardRail";
+import { SetTile } from "@/components/SetTile";
 import { GameSwitcher, type GameFilter } from "@/components/GameSwitcher";
 import { Button } from "@/components/Button";
-import { useCards } from "@/hooks/useCatalog";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-
-const COLUMNS = 2;
-const GUTTER = 14;
+import { useSets, useLatestSetCards } from "@/hooks/useCatalog";
 
 /**
- * Browse and search the real catalog. This is the mobile counterpart of the
- * web Search + Discover screens folded into one — on a phone, a separate
- * "browse" and "search" destination is a distinction without a difference.
+ * Browse every set and card in the imported games. Mirrors the web Discover page: pick a game, see its
+ * newest set, then filter the full list of sets. Searching cards by name lives in the Card database.
  */
 export function DiscoverScreen() {
-  const [query, setQuery] = useState("");
-  const [game, setGame] = useState<GameFilter>("all");
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
+  // Like the web page, "All games" falls back to the first game: sets are listed per game.
+  const [game, setGame] = useState<TcgSlug>("pokemon");
+  const [setQuery, setSetQuery] = useState("");
 
-  const debounced = useDebouncedValue(query);
-  const hasQuery = debounced.trim().length >= 2;
+  const setsQuery = useSets(game);
+  const newest = useLatestSetCards(game, 12);
 
-  const { data, isLoading, isError, refetch } = useCards(
-    {
-      query: debounced.trim(),
-      tcg: game === "all" ? undefined : game,
-      limit: 40,
-    },
-    hasQuery,
-  );
+  // Sets come ordered by release date from the API; one game returns them all in a single response.
+  const sets = useMemo(() => {
+    const all = setsQuery.data ?? [];
+    const needle = setQuery.trim().toLowerCase();
+    if (!needle) return all;
+    return all.filter((set) => set.name.toLowerCase().includes(needle) || set.code.toLowerCase().includes(needle));
+  }, [setsQuery.data, setQuery]);
 
-  const cards = data?.data ?? [];
-  // Screen padding on both sides plus one gutter between the two columns.
-  const tileWidth = (360 - S.xl * 2 - GUTTER) / COLUMNS;
+  const changeGame = (next: GameFilter) => {
+    setSetQuery("");
+    setGame(next === "all" ? "pokemon" : next);
+  };
 
   return (
-    <ScreenContainer
-      title="Discover"
-      description="Search 130,000+ Pokémon and Magic cards."
-      scroll={false}
-    >
-      <View style={styles.searchWrap}>
-        <View style={styles.searchField}>
-          <Ionicons name="search-outline" size={18} color={C.baseContentFaint} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Card name, set or number"
-            placeholderTextColor={C.baseContentFaint}
-            style={styles.input}
-            accessibilityLabel="Search cards"
-            autoCorrect={false}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-      </View>
-
+    <ScreenContainer title="Discover" description="Browse every set and card in the games CardScan has imported.">
       <View style={styles.switcher}>
-        <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
+        <GameSwitcher value={game} onChange={changeGame} games={LIVE_TCGS} />
       </View>
 
-      {!hasQuery ? (
-        <View style={styles.body}>
-          <EmptyState
-            icon="search-outline"
-            title="Find any card in seconds"
-            description="Type a card name to search the full Pokémon and Magic catalogs."
-          />
+      <View style={styles.section}>
+        <SectionHeader
+          title="Recently released"
+          subtitle={newest.set?.name ?? "Loading the latest set"}
+          onPressLink={newest.set ? () => router.push(`/sets/${newest.set!.id}`) : undefined}
+          linkLabel="View set"
+        />
+        <CardRail
+          cards={newest.cards}
+          isLoading={newest.isLoading}
+          onPressCard={(card) => router.push(`/cards/${card.id}`)}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader
+          title="All sets"
+          subtitle={setsQuery.data ? `${setsQuery.data.length.toLocaleString()} ${TCG_LABELS[game]} sets` : undefined}
+        />
+
+        <View style={styles.searchWrap}>
+          <View style={styles.searchField}>
+            <Ionicons name="search-outline" size={18} color={C.baseContentFaint} />
+            <TextInput
+              value={setQuery}
+              onChangeText={setSetQuery}
+              placeholder="Filter sets by name or code"
+              placeholderTextColor={C.baseContentFaint}
+              style={styles.input}
+              accessibilityLabel={`Filter ${TCG_LABELS[game]} sets`}
+              autoCorrect={false}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+          </View>
         </View>
-      ) : isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={C.primary} />
-        </View>
-      ) : isError ? (
-        <View style={styles.body}>
+
+        {setsQuery.isLoading && (
+          <View style={styles.centered}>
+            <ActivityIndicator color={C.primary} />
+          </View>
+        )}
+
+        {setsQuery.isError && (
           <EmptyState
             icon="cloud-offline-outline"
-            title="We couldn't reach the catalog"
+            title="We couldn't load the sets"
             description="Check your connection and try again."
-            action={<Button label="Try again" variant="primary" onPress={() => refetch()} />}
+            action={<Button label="Try again" variant="primary" onPress={() => setsQuery.refetch()} />}
           />
-        </View>
-      ) : cards.length === 0 ? (
-        <View style={styles.body}>
+        )}
+
+        {setsQuery.data && sets.length === 0 && (
           <EmptyState
-            icon="search-outline"
-            title={`No cards match "${debounced.trim()}"`}
-            description="Check the spelling, or try part of the name — 'chariz' works as well as the full name."
-            action={
-              game !== "all" ? (
-                <Button
-                  label="Search all games"
-                  variant="primary"
-                  onPress={() => setGame("all")}
-                />
-              ) : undefined
-            }
+            icon="compass-outline"
+            title="No sets match that"
+            description={`Nothing in ${TCG_LABELS[game]} matches "${setQuery}". Try a shorter search or a set code like BS or LEA.`}
           />
-        </View>
-      ) : (
-        <FlatList
-          data={cards}
-          keyExtractor={(card) => card.id}
-          numColumns={COLUMNS}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={
-            <Text style={styles.count}>
-              {data?.pagination.total.toLocaleString()}{" "}
-              {data?.pagination.total === 1 ? "card" : "cards"} found
-            </Text>
-          }
-          renderItem={({ item }) => <CardTile card={item} width={tileWidth} />}
-          // Roughly one tile's height; keeps long result lists smooth.
-          getItemLayout={(_, index) => {
-            const height = tileWidth / CARD_ASPECT + 52;
-            return { length: height, offset: height * Math.floor(index / COLUMNS), index };
-          }}
-        />
-      )}
+        )}
+
+        {sets.map((set) => (
+          <SetTile key={set.id} set={set} />
+        ))}
+      </View>
     </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  searchWrap: { paddingHorizontal: S.xl, paddingBottom: 12 },
+const createStyles = (C: Palette) => StyleSheet.create({
+  switcher: { paddingBottom: 24 },
+  section: { marginBottom: 32 },
+  searchWrap: { paddingHorizontal: GUTTER, paddingBottom: 14 },
   searchField: {
     minHeight: MIN_TOUCH,
     flexDirection: "row",
@@ -145,10 +132,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.base200,
   },
   input: { flex: 1, color: C.baseContent, fontSize: T.body, paddingVertical: 10 },
-  switcher: { paddingBottom: 14 },
-  body: { paddingHorizontal: S.xl, paddingTop: 12 },
-  centered: { paddingTop: 48, alignItems: "center" },
-  list: { paddingHorizontal: S.xl, paddingBottom: 110 },
-  row: { gap: GUTTER, marginBottom: 20 },
-  count: { color: C.baseContentMuted, fontSize: T.meta, marginBottom: 14 },
+  centered: { paddingTop: 24, alignItems: "center" },
 });

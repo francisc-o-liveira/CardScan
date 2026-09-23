@@ -1,21 +1,25 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useMemo } from "react";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
-import { C, R, S, T, MIN_TOUCH } from "@/theme";
+import { R, S, T, MIN_TOUCH, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { Button } from "@/components/Button";
+import { formatMonthYear } from "@/utils/format";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 /**
  * Future / Requires Backend Support: totals stay at zero until /collection
  * exists. Shown with a note rather than hidden, so the screen doesn't look
  * broken and no figures are invented.
  */
-const STATS = [
-  { label: "Cards", value: 0 },
-  { label: "Sets", value: 0 },
-  { label: "Scans", value: 0 },
+const STATS: { label: string; value: number; icon: ComponentProps<typeof Ionicons>["name"] }[] = [
+  { label: "Cards", value: 0, icon: "layers-outline" },
+  { label: "Sets", value: 0, icon: "albums-outline" },
+  { label: "Scans", value: 0, icon: "scan-outline" },
 ];
 
 interface Row {
@@ -26,20 +30,29 @@ interface Row {
 
 const ROWS: Row[] = [
   { label: "Wishlist", icon: "heart-outline", href: "/(tabs)/wishlist" },
-  { label: "Scan history", icon: "time-outline" },
-  { label: "Settings", icon: "settings-outline" },
-  { label: "Help", icon: "help-circle-outline" },
+  { label: "Decks", icon: "flash-outline", href: "/(tabs)/decks" },
+  { label: "Scan history", icon: "time-outline", href: "/(tabs)/scan-history" },
+  { label: "Settings", icon: "settings-outline", href: "/(tabs)/settings" },
+  { label: "Help", icon: "help-circle-outline", href: "/(tabs)/help" },
 ];
 
 export function ProfileScreen() {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const { user, logout } = useAuth();
+  const joined = formatMonthYear(user?.createdAt);
+  const avatarUri = resolveImageUrl(user?.avatarUrl);
 
   return (
     <ScreenContainer title="Profile">
       <View style={styles.body}>
         <View style={styles.identity}>
           <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={24} color={C.primary} />
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person-outline" size={24} color={C.primary} />
+            )}
           </View>
           <View style={styles.identityText}>
             <Text style={styles.username} numberOfLines={1}>
@@ -48,12 +61,14 @@ export function ProfileScreen() {
             <Text style={styles.email} numberOfLines={1}>
               {user?.email}
             </Text>
+            {joined ? <Text style={styles.joined}>Collecting since {joined}</Text> : null}
           </View>
         </View>
 
         <View style={styles.stats}>
           {STATS.map((stat) => (
             <View key={stat.label} style={styles.stat}>
+              <Ionicons name={stat.icon} size={16} color={C.baseContentFaint} style={styles.statIcon} />
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
@@ -94,8 +109,8 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { paddingHorizontal: S.xl },
+const createStyles = (C: Palette) => StyleSheet.create({
+  body: { paddingHorizontal: GUTTER },
   identity: {
     flexDirection: "row",
     alignItems: "center",
@@ -127,6 +142,9 @@ const styles = StyleSheet.create({
     borderRadius: R.lg,
     padding: 14,
   },
+  statIcon: { marginBottom: 12 },
+  joined: { marginTop: 2, color: C.baseContentFaint, fontSize: T.meta },
+  avatarImage: { width: "100%", height: "100%", borderRadius: R.lg },
   statValue: { color: C.baseContent, fontSize: 24, fontWeight: "700" },
   statLabel: { color: C.baseContentMuted, fontSize: T.meta, marginTop: 2 },
   note: { marginTop: 10, color: C.baseContentFaint, fontSize: T.meta },

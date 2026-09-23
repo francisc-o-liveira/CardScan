@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, Text, TextInput, Image, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LIVE_TCGS } from "@cardscan/config";
-import { C, R, S, T, MIN_TOUCH, CARD_ASPECT } from "@/theme";
+import { R, S, T, MIN_TOUCH, CARD_ASPECT, type Palette, GUTTER } from "@/theme";
+import { useColors } from "@/providers/ThemeProvider";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { GameSwitcher, type GameFilter } from "@/components/GameSwitcher";
 import { Button } from "@/components/Button";
+import { GameBadge } from "@/components/Badge";
+import type { TcgSlug } from "@cardscan/types";
+import { resolveImageUrl } from "@/utils/imageUrl";
 import { useCards } from "@/hooks/useCatalog";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
@@ -21,6 +26,8 @@ const FRAME_WIDTH = 150;
  * given the same weight below it.
  */
 export function ScannerScreen() {
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const [query, setQuery] = useState("");
   const [game, setGame] = useState<GameFilter>("all");
 
@@ -98,7 +105,7 @@ export function ScannerScreen() {
           <EmptyState
             icon="search-outline"
             title="No card by that name"
-            description="Try a shorter search — part of the name is enough."
+            description="Try a shorter search — part of the name is enough, and spelling counts more than capitals."
           />
         ) : (
           matches.map((card) => (
@@ -106,11 +113,12 @@ export function ScannerScreen() {
               key={card.id}
               accessibilityRole="button"
               accessibilityLabel={`${card.name}, ${card.set?.name ?? "unknown set"}`}
+              onPress={() => router.push(`/cards/${card.id}`)}
               style={({ pressed }) => [styles.result, pressed && styles.resultPressed]}
             >
               <View style={styles.thumb}>
                 {card.imageUrl ? (
-                  <Image source={{ uri: card.imageUrl }} style={styles.thumbImage} />
+                  <Image source={{ uri: resolveImageUrl(card.imageUrl) as string }} style={styles.thumbImage} />
                 ) : (
                   <Ionicons name="image-outline" size={16} color={C.baseContentFaint} />
                 )}
@@ -123,6 +131,11 @@ export function ScannerScreen() {
                   {card.set?.name}
                   {card.collectorNumber ? ` · #${card.collectorNumber}` : ""}
                 </Text>
+                {card.tcg?.slug ? (
+                  <View style={styles.resultBadge}>
+                    <GameBadge tcg={card.tcg.slug as TcgSlug} />
+                  </View>
+                ) : null}
               </View>
               <Ionicons name="chevron-forward" size={16} color={C.baseContentFaint} />
             </Pressable>
@@ -133,8 +146,9 @@ export function ScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  viewfinderWrap: { paddingHorizontal: S.xl },
+const createStyles = (C: Palette) => StyleSheet.create({
+  resultBadge: { marginTop: 6, alignSelf: "flex-start" },
+  viewfinderWrap: { paddingHorizontal: GUTTER },
   viewfinder: {
     backgroundColor: "#08080B",
     borderWidth: 1,
@@ -165,13 +179,13 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     marginTop: 28,
-    paddingHorizontal: S.xl,
+    paddingHorizontal: GUTTER,
     color: C.baseContent,
     fontSize: T.section,
     fontWeight: "700",
     marginBottom: 12,
   },
-  searchWrap: { paddingHorizontal: S.xl },
+  searchWrap: { paddingHorizontal: GUTTER },
   searchField: {
     minHeight: MIN_TOUCH,
     flexDirection: "row",
@@ -186,7 +200,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: C.baseContent, fontSize: T.body, paddingVertical: 10 },
   switcher: { marginTop: 12 },
 
-  results: { paddingHorizontal: S.xl, marginTop: 18, gap: 8 },
+  results: { paddingHorizontal: GUTTER, marginTop: 18, gap: 8 },
   hint: { color: C.baseContentFaint, fontSize: T.meta },
   loader: { marginTop: 20 },
   result: {

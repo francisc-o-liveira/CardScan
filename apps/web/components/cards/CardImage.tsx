@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useImageRetry } from "@/hooks/useImageRetry";
 import { ImageOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -35,7 +36,9 @@ export function CardImage({
   testId,
   fallbackLabel,
 }: CardImageProps) {
-  const [state, setState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
+  const [loaded, setLoaded] = useState(false);
+  const { attempt, failed, onError } = useImageRetry(src);
+  const state = !src || failed ? "error" : loaded ? "loaded" : "loading";
 
   return (
     <div className={cn("card-frame relative isolate bg-base-300", className)}>
@@ -43,14 +46,15 @@ export function CardImage({
 
       {src && state !== "error" && (
         <img
+          key={attempt}
           src={src}
           alt={name}
           data-testid={testId}
           sizes={sizes}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          onLoad={() => setState("loaded")}
-          onError={() => setState("error")}
+          onLoad={() => setLoaded(true)}
+          onError={onError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-base ease-standard",
             state === "loaded" ? "opacity-100" : "opacity-0",
