@@ -58,6 +58,31 @@ describe("scans API", () => {
     });
   });
 
+  it("passes the game the user chose to the recognizer, and only when one was chosen", async () => {
+    const auth = await signUp("ash");
+    const send = async (fields: Record<string, string>) => {
+      let req = request(app).post("/api/scans").set("Authorization", auth).attach("image", await photo(), "card.jpg");
+      for (const [key, value] of Object.entries(fields)) req = req.field(key, value);
+      return req;
+    };
+
+    expect((await send({ tcg: "yugioh" })).status).toBe(201);
+    expect(recognize).toHaveBeenLastCalledWith(expect.any(Buffer), { tcg: "yugioh" });
+
+    expect((await send({})).status).toBe(201);
+    expect(recognize).toHaveBeenLastCalledWith(expect.any(Buffer), undefined);
+  });
+
+  it("rejects a game that does not exist", async () => {
+    const auth = await signUp("ash");
+    const res = await request(app)
+      .post("/api/scans")
+      .set("Authorization", auth)
+      .field("tcg", "chess")
+      .attach("image", await photo(), "card.jpg");
+    expect(res.status).toBe(400);
+  });
+
   it("requires a signed-in user", async () => {
     expect((await request(app).post("/api/scans")).status).toBe(401);
     expect((await request(app).get("/api/scans")).status).toBe(401);

@@ -1,4 +1,4 @@
-import type { ApiResponse, Scan } from "@cardscan/types";
+import type { ApiResponse, Scan, TcgSlug } from "@cardscan/types";
 import { apiClient } from "@/lib/api-client";
 
 const unwrap = <T>(body: ApiResponse<T>): T => {
@@ -7,9 +7,10 @@ const unwrap = <T>(body: ApiResponse<T>): T => {
 };
 
 export const scansApi = {
-  async create(photo: Blob): Promise<Scan> {
+  async create(photo: Blob, tcg?: TcgSlug): Promise<Scan> {
     const form = new FormData();
     form.append("image", photo, "card.jpg");
+    if (tcg) form.append("tcg", tcg);
     // Recognition is fast; uploading a phone photo on a slow connection is what can take a while.
     const { data } = await apiClient.post<ApiResponse<Scan>>("/scans", form, { timeout: 60_000 });
     return unwrap(data);

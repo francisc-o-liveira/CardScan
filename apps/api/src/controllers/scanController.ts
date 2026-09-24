@@ -1,10 +1,11 @@
 import type { ApiResponse, Scan } from "@cardscan/types";
-import { confirmScanSchema } from "@cardscan/validation";
+import { confirmScanSchema, createScanSchema } from "@cardscan/validation";
 import { asyncHandler } from "../utils/asyncHandler";
 import * as scanService from "../services/scanService";
 
 export const createScan = asyncHandler(async (req, res) => {
-  const scan = await scanService.createScan(req.user!.sub, req.file!.buffer);
+  const { tcg } = createScanSchema.parse(req.body ?? {});
+  const scan = await scanService.createScan(req.user!.sub, req.file!.buffer, undefined, { tcg });
   const response: ApiResponse<Scan> = { success: true, data: scan };
   res.status(201).json(response);
 });

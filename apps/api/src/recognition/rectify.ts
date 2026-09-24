@@ -14,6 +14,8 @@ export interface RectifyResult {
   image: Buffer;
   /** False when no card outline was found and the centre of the photo was used instead. */
   found: boolean;
+  /** The four corners in the coordinates of the analysed (downscaled) photo, and that photo's width. */
+  outline: { corners: [Point, Point, Point, Point]; workingWidth: number };
 }
 
 type Point = { x: number; y: number };
@@ -157,8 +159,44 @@ export const rectifyCard = async (photo: Buffer): Promise<RectifyResult> => {
       .removeAlpha()
       .png()
       .toBuffer();
-    return { image, found };
+    return { image, found, outline: { corners, workingWidth: width } };
   } finally {
     for (const mat of [source, gray, blurred, binary, kernel, warped]) mat.delete();
+  }
+};
+
+/** The straightened card at twice the usual size: the small print only becomes legible at this scale. */
+export const PRINT_WIDTH = CARD_WIDTH * 2;
+export const PRINT_HEIGHT = CARD_HEIGHT * 2;
+/** Larger photos are shrunk to this before warping, to bound memory (a 12MP photo is ~48MB raw). */
+const PRINT_SOURCE_MAX = 3000;
+
+/**
+ * Straightens the card again from the full-resolution photo, using the outline found on the downscaled
+ * one. Only needed when the printed number has to be read, so it stays off the fast path.
+ */
+export const rectifyForPrint = async (photo: Buffer, outline: RectifyResult["outline"]): Promise<Buffer> => {
+  const cv = await getOpenCv();
+  const { data, info } = await sharp(photo)
+    .rotate()
+    .resize(PRINT_SOURCE_MAX, PRINT_SOURCE_MAX, { fit: "inside", withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const scale = info.width / outline.workingWidth;
+  const source = cv.matFromArray(info.height, info.width, cv.CV_8UC4, data);
+  const warped = new cv.Mat();
+  const from = cv.matFromArray(4, 1, cv.CV_32FC2, outline.corners.flatMap((p) => [p.x * scale, p.y * scale]));
+  const to = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, PRINT_WIDTH, 0, PRINT_WIDTH, PRINT_HEIGHT, 0, PRINT_HEIGHT]);
+  const transform = cv.getPerspectiveTransform(from, to);
+  try {
+    cv.warpPerspective(source, warped, transform, new cv.Size(PRINT_WIDTH, PRINT_HEIGHT), cv.INTER_CUBIC);
+    return await sharp(Buffer.from(warped.data), { raw: { width: PRINT_WIDTH, height: PRINT_HEIGHT, channels: 4 } })
+      .removeAlpha()
+      .png()
+      .toBuffer();
+  } finally {
+    for (const mat of [source, warped, from, to, transform]) mat.delete();
   }
 };

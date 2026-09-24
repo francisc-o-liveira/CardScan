@@ -52,7 +52,7 @@ export class RecognitionIndex {
     return this.cards.length;
   }
 
-  search(query: Float32Array, k: number, weights: SearchWeights = DEFAULT_WEIGHTS): SearchHit[] {
+  search(query: Float32Array, k: number, weights: SearchWeights = DEFAULT_WEIGHTS, tcg?: string): SearchHit[] {
     const total = weights.cls + weights.mean;
     const wc = weights.cls / total;
     const wm = weights.mean / total;
@@ -60,6 +60,7 @@ export class RecognitionIndex {
     let floor = -Infinity;
 
     for (let i = 0; i < this.cards.length; i++) {
+      if (tcg && this.cards[i]!.tcg !== tcg) continue;
       const base = i * EMBEDDING_DIM;
       let cls = 0;
       let mean = 0;

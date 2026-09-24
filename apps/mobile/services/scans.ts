@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import type { ApiResponse, Scan } from "@cardscan/types";
+import type { ApiResponse, Scan, TcgSlug } from "@cardscan/types";
 import { apiClient } from "@/lib/api-client";
 
 const unwrap = <T>(body: ApiResponse<T>): T => {
@@ -8,8 +8,9 @@ const unwrap = <T>(body: ApiResponse<T>): T => {
 };
 
 /** The camera hands back a file URI; native uploads send it as a file part, the web build as a Blob. */
-const photoForm = async (photoUri: string): Promise<FormData> => {
+const photoForm = async (photoUri: string, tcg?: TcgSlug): Promise<FormData> => {
   const form = new FormData();
+  if (tcg) form.append("tcg", tcg);
   if (Platform.OS === "web") {
     form.append("image", await (await fetch(photoUri)).blob(), "card.jpg");
   } else {
@@ -19,8 +20,8 @@ const photoForm = async (photoUri: string): Promise<FormData> => {
 };
 
 export const scansApi = {
-  create: async (photoUri: string): Promise<Scan> => {
-    const { data } = await apiClient.post<ApiResponse<Scan>>("/scans", await photoForm(photoUri), {
+  create: async (photoUri: string, tcg?: TcgSlug): Promise<Scan> => {
+    const { data } = await apiClient.post<ApiResponse<Scan>>("/scans", await photoForm(photoUri, tcg), {
       headers: { "Content-Type": "multipart/form-data" },
       // Recognition itself is fast; the upload of a phone photo over Wi-Fi can take a moment.
       timeout: 60_000,

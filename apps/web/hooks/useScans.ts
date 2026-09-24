@@ -1,3 +1,4 @@
+import type { TcgSlug } from "@cardscan/types";
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ export function useScanHistory() {
 export function useCreateScan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (photo: Blob) => api.scans.create(photo),
+    mutationFn: ({ photo, tcg }: { photo: Blob; tcg?: TcgSlug }) => api.scans.create(photo, tcg),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SCANS_KEY }),
   });
 }

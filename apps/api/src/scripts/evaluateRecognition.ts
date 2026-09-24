@@ -6,6 +6,8 @@ import { env } from "../config/env";
 import { prisma } from "../config/prisma";
 import { embedImages } from "../recognition/embedder";
 import { getIndex, type SearchWeights } from "../recognition/indexStore";
+import { stopPrintedText } from "../recognition/printedText";
+import { localRecognitionProvider } from "../recognition/provider";
 import { rectifyCard } from "../recognition/rectify";
 import { createRandom, synthesizePhoto } from "./lib/syntheticPhoto";
 
@@ -45,6 +47,9 @@ async function main() {
   const seed = Number(flag(args, "--seed", "7"));
   const save = Number(flag(args, "--save", "8"));
   const random = createRandom(seed);
+  // --print also runs the full recognizer, which reads the printed number to tell reprints apart.
+  const withPrint = args.includes("--print");
+  const print = { top1: 0, top5: 0, confident: 0, ms: 0, n: 0 };
 
   const index = await getIndex();
   const pool = index.cards.map((card, i) => ({ card, i })).filter(({ card }) => !tcg || card.tcg === tcg);
@@ -114,6 +119,16 @@ async function main() {
         margin: ranked[0]![1] - (ranked[1]?.[1] ?? 0),
       });
     }
+    if (withPrint) {
+      const start = Date.now();
+      const result = await localRecognitionProvider.recognize(photo, { readPrint: true });
+      print.ms += Date.now() - start;
+      print.n++;
+      const at = result.candidates.findIndex((c) => c.card.id === card.id);
+      if (at === 0) print.top1++;
+      if (at >= 0) print.top5++;
+      if (result.confidence >= 0.6) print.confident++;
+    }
     if ((n + 1) % 25 === 0) console.log(`[recognition-eval] ${n + 1}/${picked.length}`);
   }
 
@@ -128,6 +143,13 @@ async function main() {
       `  ${variant.padEnd(5)} top-1 ${pct(own.filter((r) => r.rank === 0).length, own.length).padStart(6)}` +
         `  top-5 ${pct(own.filter((r) => r.rank < 5).length, own.length).padStart(6)}` +
         `  right card name at #1 ${pct(own.filter((r) => r.sameName).length, own.length).padStart(6)}`,
+    );
+  }
+
+  if (withPrint && print.n) {
+    console.log(
+      `\n  With the printed number: top-1 ${pct(print.top1, print.n)}  top-5 ${pct(print.top5, print.n)}` +
+        `  confident ${pct(print.confident, print.n)}  ${Math.round(print.ms / print.n)} ms/photo`,
     );
   }
 
@@ -151,5 +173,6 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    await stopPrintedText();
     await prisma.$disconnect();
   });

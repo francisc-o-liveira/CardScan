@@ -65,6 +65,7 @@ export const createScan = async (
   userId: string,
   photo: Buffer,
   provider: CardRecognitionProvider = localRecognitionProvider,
+  options: { tcg?: string } = {},
 ): Promise<ScanDto> => {
   let normalised: Buffer;
   try {
@@ -84,7 +85,7 @@ export const createScan = async (
 
   let recognition;
   try {
-    recognition = await provider.recognize(normalised);
+    recognition = await provider.recognize(normalised, options.tcg ? { tcg: options.tcg } : undefined);
   } catch (error) {
     await prisma.scan.create({ data: { id, userId, imageUrl, status: "FAILED" } });
     if (error instanceof RecognitionUnavailableError) {

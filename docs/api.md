@@ -53,7 +53,7 @@ return the caller's own scans.
 
 | Method | Path                  | Notes |
 | ------ | --------------------- | ----- |
-| POST   | `/scans`              | Multipart, one photo in the `image` field (≤10MB). Stores the photo, recognises the card and returns the `Scan` with ranked `candidates` and a `confidence`. 30 req/min per IP. `503 SERVICE_UNAVAILABLE` until the recognition index is built. |
+| POST   | `/scans`              | Multipart, one photo in the `image` field (≤10MB) and, optionally, a `tcg` field (a game slug) to search only that game: with every game in one index, a card can otherwise be mistaken for one from another game. Stores the photo, recognises the card and returns the `Scan` with ranked `candidates` and a `confidence`. 30 req/min per IP. `503 SERVICE_UNAVAILABLE` until the recognition index is built. |
 | GET    | `/scans`              | The 50 most recent scans, newest first. |
 | GET    | `/scans/:id`          | One scan. |
 | POST   | `/scans/:id/confirm`  | `{ cardId }` — the card the photo really showed (any catalog card, not only a candidate). Also records it in `RecognitionFeedback`. |

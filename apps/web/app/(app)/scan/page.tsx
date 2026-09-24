@@ -58,7 +58,7 @@ export default function ScanPage() {
   const capture = (photo: Blob) => {
     setRecorded(null);
     rearm();
-    createScan.mutate(photo, { onSuccess: setScan });
+    createScan.mutate({ photo, tcg: game === "all" ? undefined : game }, { onSuccess: setScan });
   };
 
   const confirm = (card: CatalogCard) => {
@@ -90,6 +90,11 @@ export default function ScanPage() {
   return (
     <PageShell width="narrow">
       <PageHeader title="Identify a card" description="Point your camera at a card, or find it by name." />
+
+      {/* Which game the card is from narrows the search of the camera scan as well as the name search below. */}
+      <div className="mb-3">
+        <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
+      </div>
 
       <div className="flex flex-col gap-3">
         {recorded && (
@@ -161,12 +166,8 @@ export default function ScanPage() {
           isLoading={hasQuery && isFetching}
         />
 
-        <div className="mt-3">
-          <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
-        </div>
-
         <div className="mt-6">
-          {!hasQuery && <p className="text-meta text-faint">Start typing to search 130,000+ Pokémon and Magic cards.</p>}
+          {!hasQuery && <p className="text-meta text-faint">Start typing to search 212,000+ cards across eight games.</p>}
 
           {hasQuery && isLoading && (
             <ul className="flex flex-col gap-2">

@@ -56,7 +56,7 @@ export function ScannerScreen() {
   const capture = (photoUri: string) => {
     setRecorded(null);
     rearm();
-    createScan.mutate(photoUri, { onSuccess: setScan });
+    createScan.mutate({ photoUri, tcg: game === "all" ? undefined : game }, { onSuccess: setScan });
   };
 
   const confirm = (card: CatalogCard) => {
@@ -87,6 +87,11 @@ export function ScannerScreen() {
 
   return (
     <ScreenContainer title="Identify a card" description="Point your camera at a card, or find it by name.">
+      {/* Which game the card is from narrows the search of the camera scan as well as the name search below. */}
+      <View style={styles.switcherTop}>
+        <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
+      </View>
+
       <View style={styles.top}>
         {recorded ? (
           <View style={styles.recorded}>
@@ -151,13 +156,9 @@ export function ScannerScreen() {
         </View>
       </View>
 
-      <View style={styles.switcher}>
-        <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
-      </View>
-
       <View style={styles.results}>
         {!hasQuery ? (
-          <Text style={styles.hint}>Start typing to search 130,000+ Pokémon and Magic cards.</Text>
+          <Text style={styles.hint}>Start typing to search 212,000+ cards across eight games.</Text>
         ) : isLoading ? (
           <ActivityIndicator color={C.primary} style={styles.loader} />
         ) : isError ? (
@@ -228,7 +229,8 @@ const createStyles = (C: Palette) =>
       backgroundColor: C.base200,
     },
     input: { flex: 1, color: C.baseContent, fontSize: T.body, paddingVertical: 10 },
-    switcher: { marginTop: 12 },
+    switcherTop: { marginBottom: 12 },
+  switcher: { marginTop: 12 },
     results: { paddingHorizontal: GUTTER, marginTop: 18, gap: 8 },
     hint: { color: C.baseContentFaint, fontSize: T.meta },
     loader: { marginTop: 20 },
