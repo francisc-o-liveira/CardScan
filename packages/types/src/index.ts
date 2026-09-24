@@ -5,4 +5,5 @@ export * from "./card";
 export * from "./collection";
 export * from "./wishlist";
 export * from "./scan";
+export * from "./quota";
 export * from "./deck";

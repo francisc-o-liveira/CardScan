@@ -5,6 +5,7 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "QUOTA_EXCEEDED"
   | "CARD_NOT_FOUND"
   | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";

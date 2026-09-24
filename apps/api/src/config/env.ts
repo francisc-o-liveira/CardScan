@@ -48,6 +48,36 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  /** Affiliate programs: leave empty and the buy links still work, they just earn nothing. */
+  AFFILIATE_TCGPLAYER_URL: z.string().optional(),
+  AFFILIATE_EBAY_CAMPAIGN_ID: z.string().optional(),
+  AFFILIATE_CARDMARKET_URL: z.string().optional(),
+  AFFILIATE_CARDTRADER_URL: z.string().optional(),
+  /** Scan requests one IP can make a minute: recognition is the most expensive thing the API does. */
+  SCAN_RATE_LIMIT: z.coerce.number().int().positive().default(30),
+  /** Scans every user gets when they start, once. After that each watched ad gives the next batch. */
+  WELCOME_SCAN_CREDITS: z.coerce.number().int().min(0).default(5),
+  /** Optional extra free scans each UTC day, on top of the ads. 0 (the default) means only the welcome scans and ads. */
+  FREE_SCANS_PER_DAY: z.coerce.number().int().min(0).default(0),
+  /** Scans one watched rewarded ad gives (so: an ad every this many scans), and how many ads count a day. */
+  REWARDED_AD_CREDITS: z.coerce.number().int().positive().default(5),
+  REWARDED_ADS_PER_DAY: z.coerce.number().int().min(0).default(50),
+  /** Web ads: how long a session must run before it pays, and how many count a day. */
+  WEB_AD_MIN_SECONDS: z.coerce.number().int().min(0).default(15),
+  WEB_ADS_PER_DAY: z.coerce.number().int().min(0).default(10),
+  /** AdMob rewarded ad unit whose server-side verification callbacks are accepted; empty accepts any. */
+  ADMOB_REWARDED_AD_UNIT_ID: z.string().optional(),
+  /** Shared secret RevenueCat sends in the Authorization header of its webhook. */
+  REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
+  /** Stripe (web subscriptions): keys and the price ids of the two plans. */
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_YEARLY: z.string().optional(),
+  STRIPE_PRICE_SCANS_25: z.string().optional(),
+  STRIPE_PRICE_SCANS_100: z.string().optional(),
+  /** Where Stripe sends the user back after paying or cancelling. */
+  WEB_PUBLIC_URL: z.string().min(1).default("http://localhost:3001"),
   /** Keep catalogs and prices up to date in the background. On by default only while developing. */
   AUTO_SYNC: z
     .enum(["true", "false"])

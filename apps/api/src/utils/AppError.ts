@@ -23,6 +23,8 @@ export const Errors = {
   conflict: (message: string) => new AppError(409, "CONFLICT", message),
   rateLimited: (message = "Too many requests, please try again later") =>
     new AppError(429, "RATE_LIMITED", message),
+  /** 402: nothing wrong with the request, the user is out of scans. `details` is their `ScanQuota`. */
+  quotaExceeded: (message: string, details: unknown) => new AppError(402, "QUOTA_EXCEEDED", message, details),
   internal: (message = "Something went wrong") => new AppError(500, "INTERNAL_ERROR", message),
   serviceUnavailable: (message: string) => new AppError(503, "SERVICE_UNAVAILABLE", message),
 };

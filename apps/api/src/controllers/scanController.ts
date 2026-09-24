@@ -2,10 +2,19 @@ import type { ApiResponse, Scan } from "@cardscan/types";
 import { confirmScanSchema, createScanSchema } from "@cardscan/validation";
 import { asyncHandler } from "../utils/asyncHandler";
 import * as scanService from "../services/scanService";
+import * as quotaService from "../services/quotaService";
 
 export const createScan = asyncHandler(async (req, res) => {
   const { tcg } = createScanSchema.parse(req.body ?? {});
-  const scan = await scanService.createScan(req.user!.sub, req.file!.buffer, undefined, { tcg });
+  // The scan is paid before it runs (so parallel requests cannot overspend) and given back if it fails.
+  const reservation = await quotaService.reserveScan(req.user!.sub);
+  let scan;
+  try {
+    scan = await scanService.createScan(req.user!.sub, req.file!.buffer, undefined, { tcg });
+  } catch (error) {
+    await quotaService.refundScan(req.user!.sub, reservation);
+    throw error;
+  }
   const response: ApiResponse<Scan> = { success: true, data: scan };
   res.status(201).json(response);
 });

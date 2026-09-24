@@ -17,6 +17,10 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       DATABASE_URL: TEST_DATABASE_URL,
+      // The quota has its own tests; everywhere else scans are not limited.
+      FREE_SCANS_PER_DAY: "100000",
+      WELCOME_SCAN_CREDITS: "0",
+      SCAN_RATE_LIMIT: "10000",
       AUTH_RATE_LIMIT: "10000",
       JWT_SECRET: "test-access-secret",
       JWT_REFRESH_SECRET: "test-refresh-secret",

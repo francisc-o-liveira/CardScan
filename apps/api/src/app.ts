@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import type { ApiResponse } from "@cardscan/types";
 import { env } from "./config/env";
 import { apiRoutes } from "./routes";
+import * as billingController from "./controllers/billingController";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 export const createApp = () => {
@@ -28,6 +29,8 @@ export const createApp = () => {
     },
     express.static(env.ASSETS_DIR, { maxAge: "30d", immutable: true, index: false }),
   );
+  // Stripe signs the exact bytes it sends, so its webhook reads the raw body, before the JSON parser.
+  app.post("/api/billing/stripe/webhook", express.raw({ type: "*/*", limit: "1mb" }), billingController.stripeWebhook);
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
 

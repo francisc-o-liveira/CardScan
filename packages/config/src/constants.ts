@@ -122,3 +122,7 @@ export const FEATURE_FLAGS = {
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
+
+/** One-off scan packs: product id -> scans. Prices are set in Google Play and Stripe, not here. */
+export const SCAN_PACKS = { scans_25: 25, scans_100: 100 } as const;
+export type ScanPackId = keyof typeof SCAN_PACKS;

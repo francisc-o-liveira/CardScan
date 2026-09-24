@@ -78,6 +78,20 @@ adding copies that match an existing group adds to its quantity instead of creat
 | ------ | --------------------- | ----- |
 | GET    | `/images?url=`        | Fetches a card image once from an allowlisted host (`cards.scryfall.io`, https only), stores it and redirects to the copy under `/assets/proxy`. For networks that can't reach the image CDN. |
 
+## Quota, premium and rewarded ads
+
+Scanning is limited for free users: everyone starts with `WELCOME_SCAN_CREDITS` scans (once), then each watched rewarded ad gives `REWARDED_AD_CREDITS` more. `FREE_SCANS_PER_DAY` (0 by default) adds an optional daily allowance. Premium users are not limited. Card data, search, prices and the collection are never limited (see `docs/monetization.md`).
+
+| Method | Path | Notes |
+| ------ | ---- | ----- |
+| GET    | `/quota`                    | Auth. `ScanQuota`: premium, free scans left, credits, when the free scans come back, ads still worth watching today. |
+| POST   | `/scans`                    | Also spends one scan. With none left: `402 QUOTA_EXCEEDED` whose `details` is the `ScanQuota`. A scan that fails on our side is given back. |
+| POST   | `/billing/checkout`         | Auth. `{ product: "monthly" \| "yearly" \| "scans_25" \| "scans_100" }`. Returns `{ url }`, the Stripe Checkout page (web): a subscription for a plan, a one-off payment for a scan pack. `503` until Stripe is configured. |
+| POST   | `/billing/revenuecat`       | RevenueCat webhook (Android). `Authorization: Bearer REVENUECAT_WEBHOOK_SECRET`. The app logs into RevenueCat with our user id. |
+| POST   | `/billing/stripe/webhook`   | Stripe webhook, signature checked on the raw body. |
+| POST   | `/ads/web/start`, `/ads/web/complete` | Auth. Web rewarded ads: `start` opens a timed session, `complete` (`{ sessionId }`) adds the scans once the session ran `WEB_AD_MIN_SECONDS`, once, up to `WEB_ADS_PER_DAY` a day. |
+| GET    | `/ads/ssv`                  | AdMob server-side verification callback for a finished rewarded ad. Only a valid Google signature adds credits; one grant per transaction, at most `REWARDED_ADS_PER_DAY` a day. |
+
 ## Planned (later phases)
 
 `/api/wishlist`, `/api/decks` — schema and types already exist (see `prisma/schema.prisma`, `packages/types`), routes will be added as each phase lands.
