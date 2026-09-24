@@ -16,6 +16,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { useCard, useCards } from "@/hooks/useCatalog";
 import { useAddToCollection, useCardInCollection } from "@/hooks/useCollection";
 import { OwnedCopies } from "@/components/OwnedCopies";
+import { BuyLinks } from "@/components/BuyLinks";
 import { MarketPrices, PriceHistory } from "@/components/PriceHistory";
 import { formatPrice } from "@/utils/format";
 import { apiErrorMessage } from "@/utils/apiError";
@@ -202,6 +203,7 @@ export function CardDetailScreen() {
           </View>
 
           <MarketPrices prices={card.prices} />
+          <BuyLinks links={card.buyLinks} />
           <PriceHistory cardId={card.id} prices={card.prices} />
 
           {(related.isLoading || relatedCards.length > 0) && (

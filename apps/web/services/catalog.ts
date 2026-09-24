@@ -1,5 +1,6 @@
 import type {
   ApiResponse,
+  BuyLink,
   CardPrice,
   CardPriceHistory,
   CatalogCard,
@@ -31,6 +32,7 @@ export interface CatalogCardDetail extends CatalogCard {
   tcg: CatalogTcg;
   variants: CatalogCardVariant[];
   prices: CardPrice[];
+  buyLinks: BuyLink[];
 }
 
 export interface CatalogSetDetail extends CatalogSet {

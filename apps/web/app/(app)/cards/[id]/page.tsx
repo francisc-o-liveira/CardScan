@@ -22,6 +22,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { CardImage } from "@/components/cards/CardImage";
 import { CardLightbox } from "@/components/cards/CardLightbox";
 import { CardRail } from "@/components/cards/CardRail";
+import { BuyLinks } from "@/components/cards/BuyLinks";
 import { PriceHistory } from "@/components/cards/PriceHistory";
 import { GameBadge, Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -302,6 +303,8 @@ export default function CardDetailPage() {
               </section>
 
               <MarketPrices prices={card.prices} />
+
+              <BuyLinks links={card.buyLinks} />
 
             </div>
           </div>

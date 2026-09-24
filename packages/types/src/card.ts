@@ -80,6 +80,14 @@ export interface CardMarketPrice {
   subType: string;
 }
 
+/** A place to buy the card. `affiliate` is true when the link earns a commission, which the apps must disclose. */
+export interface BuyLink {
+  marketplace: "tcgplayer" | "cardmarket" | "cardtrader" | "ebay";
+  label: string;
+  url: string;
+  affiliate: boolean;
+}
+
 /**
  * Card as returned by `GET /api/cards` — a single printing with its set and
  * TCG attached. Both are absent on the bare card rows nested inside
@@ -100,6 +108,8 @@ export interface CatalogCard {
   marketPrice: CardMarketPrice | null;
   /** Every finish's full price row — only on `GET /api/cards/:id`. */
   prices?: CardPrice[];
+  /** Where to buy it — only on `GET /api/cards/:id`. */
+  buyLinks?: BuyLink[];
 }
 
 export interface CatalogSet {

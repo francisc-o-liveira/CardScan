@@ -9,6 +9,7 @@ import type { CardQueryInput } from "@cardscan/validation";
 import { prisma } from "../config/prisma";
 import { Errors } from "../utils/AppError";
 import { PRICE_SOURCE } from "./priceSyncService";
+import { buildBuyLinks } from "./affiliateService";
 import { backfillFromTcgplayer } from "./tcgplayerHistoryService";
 
 export const listTcgs = () => prisma.tcg.findMany({ orderBy: { name: "asc" } });
@@ -120,7 +121,9 @@ export const getCardById = async (id: string) => {
     }))
     .sort((a, b) => finishRank(a.subType) - finishRank(b.subType));
 
-  return { ...card, marketPrice: pickMarketPrice(card.prices), prices };
+  const buyLinks = buildBuyLinks({ name: card.name, setName: card.set?.name, gameName: card.tcg?.name, gameSlug: card.tcg?.slug, prices });
+
+  return { ...card, marketPrice: pickMarketPrice(card.prices), prices, buyLinks };
 };
 
 const RANGE_MONTHS: Record<PriceHistoryRange, number> = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 };
