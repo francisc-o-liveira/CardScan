@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,12 @@ import { useCards } from "@/hooks/useCatalog";
 import { useCreateScan } from "@/hooks/useScans";
 import { useAddToCollection } from "@/hooks/useCollection";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { apiErrorMessage } from "@/utils/apiError";
+import { AdBanner } from "@/components/AdBanner";
+import { QuotaNotice } from "@/components/QuotaNotice";
+import { useAuth } from "@/providers/AuthProvider";
+import { QUOTA_KEY, useQuota } from "@/hooks/useQuota";
+import { adsAvailable, showRewardedAd, warmUpAds } from "@/services/ads";
+import { apiErrorMessage, quotaExceeded } from "@/utils/apiError";
 
 /**
  * Identify a card: point the camera at it, or find it by name. Batch-friendly, as docs/design-system.md
@@ -38,6 +44,40 @@ export function ScannerScreen() {
 
   const createScan = useCreateScan();
   const addToCollection = useAddToCollection();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: quota } = useQuota();
+  const noneLeft = quota && !quota.premium && (quota.freeRemaining ?? 0) + quota.credits === 0 ? quota : null;
+  // Out of scans: known from the count, or from the server refusing one. A result on screen stays visible first.
+  const outOfScans = (createScan.isError ? quotaExceeded(createScan.error) : null) ?? noneLeft;
+  const [watching, setWatching] = useState(false);
+  const [adMessage, setAdMessage] = useState<string | null>(null);
+
+  // Start the consent form and the ads SDK early, so the first rewarded ad does not wait for them.
+  useEffect(() => warmUpAds(), []);
+
+  /**
+   * A rewarded ad for more scans. The credits are added by our server once Google confirms the ad was
+   * watched, so after the ad the app asks the server until they show up.
+   */
+  const watchAd = async () => {
+    if (!user) return;
+    setAdMessage(null);
+    setWatching(true);
+    const before = quota?.credits ?? 0;
+    const result = await showRewardedAd(user.id);
+    if (result === "earned") {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        await queryClient.invalidateQueries({ queryKey: QUOTA_KEY });
+        if ((queryClient.getQueryData<{ credits: number }>(QUOTA_KEY)?.credits ?? 0) > before) break;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      createScan.reset();
+    } else {
+      setAdMessage(result === "closed" ? "Watch the whole ad to get the scans." : "No ad is available right now. Try again in a moment.");
+    }
+    setWatching(false);
+  };
 
   const debounced = useDebouncedValue(query);
   const hasQuery = debounced.trim().length >= 2;
@@ -92,6 +132,8 @@ export function ScannerScreen() {
         <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
       </View>
 
+      <QuotaNotice />
+
       <View style={styles.top}>
         {recorded ? (
           <View style={styles.recorded}>
@@ -105,7 +147,34 @@ export function ScannerScreen() {
           </View>
         ) : null}
 
-        {createScan.isError ? (
+        {outOfScans && !scan ? (
+          <EmptyState
+            icon="ribbon-outline"
+            title="Watch an ad to keep scanning"
+            description={`Each ad gives you ${outOfScans.rewardedAd.credits} more scans. Searching for a card by name is always free.${adMessage ? ` ${adMessage}` : ""}`}
+            action={
+              adsAvailable() && outOfScans.rewardedAd.remainingToday > 0 ? (
+                <Button
+                  label={watching ? "Loading the ad..." : `Watch an ad, get ${outOfScans.rewardedAd.credits} scans`}
+                  icon="play-circle-outline"
+                  variant="primary"
+                  onPress={watchAd}
+                  disabled={watching}
+                />
+              ) : (
+                <Button label="Get more scans" icon="ribbon-outline" variant="primary" onPress={() => router.push("/(tabs)/premium")} />
+              )
+            }
+            secondaryAction={
+              <>
+                {adsAvailable() && outOfScans.rewardedAd.remainingToday > 0 ? (
+                  <Button label="Buy scans or go premium" icon="ribbon-outline" variant="secondary" onPress={() => router.push("/(tabs)/premium")} />
+                ) : null}
+                <Button label="Find it by name" icon="search-outline" variant="secondary" onPress={enterManually} />
+              </>
+            }
+          />
+        ) : createScan.isError ? (
           <EmptyState
             icon="alert-circle-outline"
             title="We couldn't identify that card"
@@ -127,6 +196,8 @@ export function ScannerScreen() {
           <Viewfinder busy={createScan.isPending} onCapture={capture} />
         )}
       </View>
+
+      {scan ? <AdBanner /> : null}
 
       <Text style={styles.sectionTitle}>Find it by name</Text>
       {manualFor ? (

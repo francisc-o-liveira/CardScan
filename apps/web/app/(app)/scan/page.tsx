@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, ScanLine, Search, SearchX } from "lucide-react";
+import { AlertCircle, CheckCircle2, Crown, Play, ScanLine, Search, SearchX } from "lucide-react";
 import { LIVE_TCGS } from "@cardscan/config";
 import type { CatalogCard, Scan } from "@cardscan/types";
 import { PageShell, PageHeader } from "@/components/layout/PageShell";
@@ -20,7 +20,13 @@ import { useCards } from "@/hooks/useCatalog";
 import { useCreateScan } from "@/hooks/useScans";
 import { useAddToCollection } from "@/hooks/useCollection";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { getErrorMessage } from "@/lib/api-error";
+import { QuotaNotice } from "@/components/scan/QuotaNotice";
+import { WebAdModal } from "@/components/scan/WebAdModal";
+import { webAdTagUrl } from "@/lib/web-ad";
+import { QUOTA_KEY } from "@/hooks/useQuota";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuota } from "@/hooks/useQuota";
+import { getErrorMessage, getQuotaExceeded } from "@/lib/api-error";
 
 /**
  * Identify a card: point the camera at it, or find it by name. Batch-friendly, as docs/design-system.md
@@ -39,6 +45,14 @@ export default function ScanPage() {
   const searchInput = useRef<HTMLInputElement>(null);
 
   const createScan = useCreateScan();
+  const { data: quota } = useQuota();
+  const queryClient = useQueryClient();
+  const [adOpen, setAdOpen] = useState(false);
+  // Web ads exist only when an ad tag is configured, and while today's are not used up.
+  const canWatchAd = Boolean(webAdTagUrl()) && (quota?.webRewardedAd.remainingToday ?? 0) > 0;
+  const noneLeft = quota && !quota.premium && (quota.freeRemaining ?? 0) + quota.credits === 0 ? quota : null;
+  // Out of scans: known from the count, or from the server refusing one. A result on screen stays visible first.
+  const outOfScans = (createScan.isError ? getQuotaExceeded(createScan.error) : null) ?? noneLeft;
   const addToCollection = useAddToCollection();
 
   const debounced = useDebouncedValue(query);
@@ -96,6 +110,10 @@ export default function ScanPage() {
         <GameSwitcher value={game} onChange={setGame} games={LIVE_TCGS} />
       </div>
 
+      <div className="mb-3">
+        <QuotaNotice />
+      </div>
+
       <div className="flex flex-col gap-3">
         {recorded && (
           <div className="flex items-center gap-2.5 rounded-panel border border-success/25 bg-success/10 px-4 py-3">
@@ -107,7 +125,56 @@ export default function ScanPage() {
           </div>
         )}
 
-        {createScan.isError ? (
+        {adOpen && outOfScans ? (
+          <WebAdModal
+            credits={outOfScans.webRewardedAd.credits}
+            onClose={() => setAdOpen(false)}
+            onEarned={() => {
+              setAdOpen(false);
+              createScan.reset();
+              void queryClient.invalidateQueries({ queryKey: QUOTA_KEY });
+            }}
+          />
+        ) : null}
+
+        {outOfScans && !scan ? (
+          <EmptyState
+            icon={Crown}
+            title={canWatchAd ? "Watch an ad to keep scanning" : "You've used your free scans"}
+            description={
+              canWatchAd
+                ? `Each ad gives you ${outOfScans.webRewardedAd.credits} more scans. Searching for a card by name is always free.`
+                : `Get a scan pack or go Premium to keep scanning here; searching by name is always free. On Android, an ad gives you ${outOfScans.rewardedAd.credits} more scans.`
+            }
+            action={
+              canWatchAd ? (
+                <Button variant="primary" size="lg" onClick={() => setAdOpen(true)}>
+                  <Play className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                  Watch an ad, get {outOfScans.webRewardedAd.credits} scans
+                </Button>
+              ) : (
+                <Button variant="primary" size="lg" onClick={() => router.push("/premium")}>
+                  <Crown className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                  Get more scans
+                </Button>
+              )
+            }
+            secondaryAction={
+              <>
+                {canWatchAd && (
+                  <Button variant="outline" size="lg" onClick={() => router.push("/premium")}>
+                    <Crown className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                    Buy scans or go Premium
+                  </Button>
+                )}
+                <Button variant="outline" size="lg" onClick={enterManually}>
+                  <Search className="h-[1.1rem] w-[1.1rem]" aria-hidden />
+                  Find it by name
+                </Button>
+              </>
+            }
+          />
+        ) : createScan.isError ? (
           <EmptyState
             icon={AlertCircle}
             title="We couldn't identify that card"

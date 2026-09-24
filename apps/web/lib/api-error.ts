@@ -1,5 +1,5 @@
 import { isAxiosError } from "axios";
-import type { ApiErrorCode } from "@cardscan/types";
+import type { ApiErrorCode, ScanQuota } from "@cardscan/types";
 
 /**
  * Wording we prefer over the API's own message, because these reach the user
@@ -11,6 +11,13 @@ const FRIENDLY: Partial<Record<ApiErrorCode, string>> = {
   CONFLICT: "An account with those details already exists. Try signing in instead.",
   INTERNAL_ERROR: "Something went wrong on our side. Please try again.",
 };
+
+/** The user's quota when a scan was refused because they are out of scans, otherwise null. */
+export function getQuotaExceeded(error: unknown): ScanQuota | null {
+  if (!isAxiosError(error) || error.response?.status !== 402) return null;
+  const body = error.response.data as { error?: { code?: ApiErrorCode; details?: ScanQuota } } | undefined;
+  return body?.error?.code === "QUOTA_EXCEEDED" ? (body.error.details ?? null) : null;
+}
 
 /**
  * Turns a thrown request into a sentence a person can act on.

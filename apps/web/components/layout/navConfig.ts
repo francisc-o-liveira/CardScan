@@ -3,6 +3,7 @@ import {
   Layers,
   ScanLine,
   Compass,
+  Crown,
   UserRound,
   Heart,
   History,
@@ -39,6 +40,7 @@ export const DESKTOP_NAV = PRIMARY_NAV.filter((item) => item.href !== "/profile"
 
 /** Secondary destinations, surfaced from the Profile screen and avatar menu. */
 export const SECONDARY_NAV: NavItem[] = [
+  { href: "/premium", label: "Premium", icon: Crown },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/decks", label: "Decks", icon: Swords },
   { href: "/scan-history", label: "Scan History", icon: History },

@@ -1,8 +1,9 @@
-import type { TcgSlug } from "@cardscan/types";
 "use client";
 
+import type { TcgSlug } from "@cardscan/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { QUOTA_KEY } from "./useQuota";
 
 const SCANS_KEY = ["scans"] as const;
 
@@ -14,7 +15,9 @@ export function useCreateScan() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ photo, tcg }: { photo: Blob; tcg?: TcgSlug }) => api.scans.create(photo, tcg),
+    // The scan spent one, or was refused because none were left: either way the count changed.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SCANS_KEY }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QUOTA_KEY }),
   });
 }
 

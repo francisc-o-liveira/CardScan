@@ -1,5 +1,6 @@
 import { authApi } from "./auth";
 import { catalogApi } from "./catalog";
+import { quotaApi } from "./quota";
 import { scansApi } from "./scans";
 import { collectionApi } from "./collection";
 
@@ -7,6 +8,7 @@ import { collectionApi } from "./collection";
 export const api = {
   auth: authApi,
   catalog: catalogApi,
+  quota: quotaApi,
   scans: scansApi,
   collection: collectionApi,
 };

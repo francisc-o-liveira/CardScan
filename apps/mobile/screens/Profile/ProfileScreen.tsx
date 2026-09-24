@@ -22,6 +22,7 @@ interface Row {
 }
 
 const ROWS: Row[] = [
+  { label: "Premium", icon: "ribbon-outline", href: "/(tabs)/premium" },
   { label: "Wishlist", icon: "heart-outline", href: "/(tabs)/wishlist" },
   { label: "Decks", icon: "swords", href: "/(tabs)/decks" },
   { label: "Scan history", icon: "history", href: "/(tabs)/scan-history" },

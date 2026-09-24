@@ -109,6 +109,7 @@ export default function TabsLayout() {
       />
       {/* Reached from Profile, not the tab bar. */}
       <Tabs.Screen name="wishlist" options={{ href: null, title: "Wishlist" }} />
+      <Tabs.Screen name="premium" options={{ href: null, title: "Premium" }} />
       <Tabs.Screen name="decks" options={{ href: null, title: "Decks" }} />
       <Tabs.Screen name="scan-history" options={{ href: null, title: "Scan history" }} />
       <Tabs.Screen name="settings" options={{ href: null, title: "Settings" }} />

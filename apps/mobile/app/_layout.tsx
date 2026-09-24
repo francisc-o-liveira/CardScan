@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
+import { PurchasesSync } from "@/providers/PurchasesSync";
 
 /** Inside the provider so the status bar icons and the route background follow the chosen theme. */
 function ThemedStack() {
@@ -31,6 +32,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
+              <PurchasesSync />
               <ThemedStack />
             </AuthProvider>
           </QueryProvider>
