@@ -40,6 +40,7 @@ export function GameSwitcher({
             key={option}
             onPress={() => onChange(option)}
             accessibilityRole="radio"
+            accessibilityLabel={label}
             accessibilityState={{ selected, checked: selected }}
             style={[
               styles.chip,

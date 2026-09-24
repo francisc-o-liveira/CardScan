@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { AppIcon, type AppIconName } from "@/components/AppIcon";
 import type { ComponentProps } from "react";
 import { R, S, T, MIN_TOUCH, type Palette, GUTTER } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
@@ -16,14 +17,14 @@ import { resolveImageUrl } from "@/utils/imageUrl";
 
 interface Row {
   label: string;
-  icon: ComponentProps<typeof Ionicons>["name"];
+  icon: AppIconName;
   href?: string;
 }
 
 const ROWS: Row[] = [
   { label: "Wishlist", icon: "heart-outline", href: "/(tabs)/wishlist" },
-  { label: "Decks", icon: "flash-outline", href: "/(tabs)/decks" },
-  { label: "Scan history", icon: "time-outline", href: "/(tabs)/scan-history" },
+  { label: "Decks", icon: "swords", href: "/(tabs)/decks" },
+  { label: "Scan history", icon: "history", href: "/(tabs)/scan-history" },
   { label: "Settings", icon: "settings-outline", href: "/(tabs)/settings" },
   { label: "Help", icon: "help-circle-outline", href: "/(tabs)/help" },
 ];
@@ -33,10 +34,10 @@ export function ProfileScreen() {
   const styles = useMemo(() => createStyles(C), [C]);
   const { user, logout } = useAuth();
   const { data: summary } = useCollectionSummary();
-  const STATS: { label: string; value: number; icon: ComponentProps<typeof Ionicons>["name"] }[] = [
+  const STATS: { label: string; value: number; icon: AppIconName }[] = [
     { label: "Cards", value: summary?.totalCards ?? 0, icon: "layers-outline" },
-    { label: "Sets", value: summary?.totalSets ?? 0, icon: "albums-outline" },
-    { label: "Scans", value: summary?.scans ?? 0, icon: "scan-outline" },
+    { label: "Sets", value: summary?.totalSets ?? 0, icon: "boxes" },
+    { label: "Scans", value: summary?.scans ?? 0, icon: "scan-line" },
   ];
   const joined = formatMonthYear(user?.createdAt);
   const avatarUri = resolveImageUrl(user?.avatarUrl);
@@ -66,7 +67,7 @@ export function ProfileScreen() {
         <View style={styles.stats}>
           {STATS.map((stat) => (
             <View key={stat.label} style={styles.stat}>
-              <Ionicons name={stat.icon} size={16} color={C.baseContentFaint} style={styles.statIcon} />
+              <AppIcon name={stat.icon} size={16} color={C.baseContentFaint} style={styles.statIcon} />
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
@@ -90,7 +91,7 @@ export function ProfileScreen() {
                 !row.href && styles.rowDisabled,
               ]}
             >
-              <Ionicons name={row.icon} size={19} color={C.baseContentFaint} />
+              <AppIcon name={row.icon} size={19} color={C.baseContentFaint} />
               <Text style={styles.rowLabel}>{row.label}</Text>
               {row.href ? (
                 <Ionicons name="chevron-forward" size={16} color={C.baseContentFaint} />
@@ -170,5 +171,5 @@ const createStyles = (C: Palette) => StyleSheet.create({
   rowLabel: { flex: 1, color: C.baseContent, fontSize: T.body },
   soon: { color: C.baseContentFaint, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
 
-  logout: { marginTop: 24 },
+  logout: { marginTop: 24, alignItems: "flex-start" },
 });

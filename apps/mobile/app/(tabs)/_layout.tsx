@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { View, Text, StyleSheet, Platform } from "react-native";
 import { Redirect, Tabs, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { AppIcon } from "@/components/AppIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Palette } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
@@ -72,7 +73,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => (
             <View style={styles.scanSlot}>
               <View style={[styles.scanButton, focused && styles.scanButtonActive]}>
-                <Ionicons name="scan" size={26} color={C.primaryContent} />
+                <AppIcon name="scan-line" size={26} color={C.primaryContent} />
               </View>
             </View>
           ),

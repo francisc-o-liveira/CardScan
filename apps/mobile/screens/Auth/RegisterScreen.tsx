@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "expo-router";
+import { BrandMark } from "@/components/AppHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { registerSchema, type RegisterInput } from "@cardscan/validation";
 import { useAuth } from "@/providers/AuthProvider";
@@ -56,10 +57,7 @@ export function RegisterScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <View style={styles.brandRow}>
-              <View style={styles.logoBadge}>
-                <Ionicons name="scan-outline" size={18} color={C.primary} />
-              </View>
-              <Text style={styles.brandText}>CardScan</Text>
+              <BrandMark />
             </View>
             <Text style={styles.title}>Create your account</Text>
             <Text style={styles.subtitle}>Start tracking your collection in a couple of minutes.</Text>
@@ -169,16 +167,16 @@ const createStyles = (C: Palette) => StyleSheet.create({
   },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
   brandText: { color: C.baseContent, fontSize: 16, fontWeight: "700" },
-  title: { fontSize: 24, fontWeight: "600", color: C.baseContent },
+  title: { fontSize: 26, fontWeight: "600", letterSpacing: -0.5, color: C.baseContent },
   subtitle: { fontSize: 14, color: C.baseContentMuted, textAlign: "center" },
-  label: { fontSize: 13, color: C.baseContentMuted, marginBottom: 6, marginTop: 14 },
+  label: { fontSize: 14, fontWeight: "600", color: C.baseContent, marginBottom: 8, marginTop: 16 },
   input: {
     borderWidth: 1,
     borderColor: C.border,
-    backgroundColor: C.base200,
-    borderRadius: 10,
+    backgroundColor: "transparent",
+    borderRadius: 16,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 15,
     color: C.baseContent,
   },

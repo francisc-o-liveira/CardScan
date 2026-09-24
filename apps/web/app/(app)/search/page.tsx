@@ -185,7 +185,7 @@ function SearchContent() {
               tone="inline"
               icon={Search}
               title="Find any card in seconds"
-              description="Search 130,000+ Pokémon and Magic cards by name, set or collector number."
+              description="Search 212,000+ cards across eight games by name, set or collector number."
             />
           </div>
         </div>

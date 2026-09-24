@@ -48,7 +48,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: "Find any card in seconds.",
-    body: "Scan a card with your camera, or search 130,000+ Pokémon and Magic cards by name, set or number — with the real artwork.",
+    body: "Scan a card with your camera, or search 212,000+ cards across eight games by name, set or number — with the real artwork.",
     visual: <ScanFrame caption="Hold a card up to the camera" />,
   },
   {

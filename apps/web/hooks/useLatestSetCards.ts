@@ -5,6 +5,9 @@ import type { TcgSlug } from "@cardscan/types";
 import { useSets, useCards } from "./useCatalog";
 import type { CatalogCard } from "@/services/catalog";
 
+/** Smallest set worth showcasing as "new": skips one-card promos. */
+const MIN_SET_CARDS = 30;
+
 /** The API's max page size. */
 const MAX_LIMIT = 100;
 
@@ -37,7 +40,12 @@ export function useLatestSetCards(tcg: TcgSlug, count = 12) {
     const sets = setsQuery.data;
     if (!sets?.length) return undefined;
     // Skip sets that report no cards — they render as an empty rail.
-    return sets.find((set) => (set.totalCards ?? 0) > 0) ?? sets[0];
+    // Prefer a real set over a one-card promo; fall back to any set with cards.
+    return (
+      sets.find((set) => (set.totalCards ?? 0) >= MIN_SET_CARDS) ??
+      sets.find((set) => (set.totalCards ?? 0) > 0) ??
+      sets[0]
+    );
   }, [setsQuery.data]);
 
   const cardsQuery = useCards(

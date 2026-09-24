@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { Pressable, Text, StyleSheet, ActivityIndicator, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AppIcon, type AppIconName } from "@/components/AppIcon";
 import { R, T, MIN_TOUCH, type Palette } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
 
@@ -11,7 +11,7 @@ interface ButtonProps {
   label: string;
   onPress: () => void;
   variant?: Variant;
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: AppIconName;
   isLoading?: boolean;
   disabled?: boolean;
 }
@@ -57,7 +57,7 @@ export function Button({
         {isLoading ? (
           <ActivityIndicator size="small" color={textColor} />
         ) : icon ? (
-          <Ionicons name={icon} size={18} color={textColor} />
+          <AppIcon name={icon} size={18} color={textColor} />
         ) : null}
         <Text style={[styles.label, { color: textColor }]}>{label}</Text>
       </View>

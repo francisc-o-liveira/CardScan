@@ -23,6 +23,7 @@ export function BackHeader({ label = "Back", fallback = "/(tabs)" }: { label?: s
 }
 
 const createStyles = (C: Palette) => StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: GUTTER, paddingTop: S.md, paddingBottom: S.sm },
+  // Same spacing as the web page: 24px above a 36px tall link, 20px below it.
+  row: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: GUTTER, paddingTop: S.xl, paddingBottom: 13, minHeight: 73 },
   text: { color: C.baseContentMuted, fontSize: T.meta, fontWeight: "600" },
 });

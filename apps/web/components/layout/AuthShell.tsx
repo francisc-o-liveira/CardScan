@@ -57,7 +57,7 @@ export function AuthShell({
             Every card you own, in one place.
           </p>
           <p className="mt-3 max-w-sm text-body text-muted">
-            130,000+ Pokémon and Magic cards, searchable by name, set or number.
+            212,000+ cards across eight games, searchable by name, set or number.
           </p>
         </div>
 

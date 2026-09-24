@@ -29,7 +29,7 @@ export function QuickActions() {
               href={action.href}
               className="group flex h-full min-h-[5.5rem] flex-col justify-between gap-3 rounded-panel border border-hairline bg-base-200 p-4 shadow-sheen transition-colors duration-fast hover:border-strong hover:bg-base-300"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/12 text-primary transition-colors duration-fast group-hover:bg-primary group-hover:text-primary-content">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--primary-soft)] text-primary transition-colors duration-fast group-hover:bg-primary group-hover:text-primary-content">
                 <action.icon className="h-[1.1rem] w-[1.1rem]" aria-hidden />
               </span>
               <span>

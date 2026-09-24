@@ -1,4 +1,4 @@
-import type { Palette } from "@/theme";
+import { GUTTER, T, type Palette } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
 import { AppHeader } from "@/components/AppHeader";
 import { useCallback, useMemo, useState } from "react";
@@ -16,11 +16,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LIVE_TCGS, TCG_SHORT_LABELS } from "@cardscan/config";
+import { LIVE_TCGS } from "@cardscan/config";
 import type { TcgSlug } from "@cardscan/types";
 import type { CatalogCard } from "@/services/catalog";
 import { CardTile } from "@/components/CardTile";
 import { EmptyState } from "@/components/EmptyState";
+import { GameSwitcher } from "@/components/GameSwitcher";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useInfiniteCards, useSets } from "@/hooks/useCatalog";
 import { useOwned } from "@/hooks/useCollection";
@@ -29,7 +30,7 @@ import { useOwned } from "@/hooks/useCollection";
 const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)"));
 
 const PAGE_SIZE = 30;
-const COLUMNS = 3;
+const COLUMNS = 2;
 
 export function CardDatabaseScreen() {
   const C = useColors();
@@ -84,10 +85,7 @@ export function CardDatabaseScreen() {
           <Ionicons name="chevron-back" size={26} color={C.baseContent} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Card Database</Text>
-          <Text style={styles.subtitle} testID="card-total">
-            {total !== undefined ? `${total.toLocaleString()} cards` : "Search every card in the catalog"}
-          </Text>
+          <Text style={styles.title}>Search</Text>
         </View>
       </View>
 
@@ -111,13 +109,15 @@ export function CardDatabaseScreen() {
         )}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chips}>
-        <Chip label="All TCGs" selected={tcg === ""} onPress={() => chooseTcg("")} />
-        {/* Every supported game, like the web filter, whether or not its catalog has been imported yet. */}
-        {LIVE_TCGS.map((slug) => (
-          <Chip key={slug} label={TCG_SHORT_LABELS[slug]} selected={tcg === slug} onPress={() => chooseTcg(slug)} />
-        ))}
-      </ScrollView>
+      {/* Every supported game, like the web filter, whether or not its catalog has been imported yet. */}
+      <View style={styles.chipScroll}>
+        <GameSwitcher value={tcg || "all"} onChange={(value) => chooseTcg(value === "all" ? "" : value)} games={LIVE_TCGS} />
+      </View>
+      {total !== undefined ? (
+        <Text style={styles.count} testID="card-total">
+          <Text style={styles.countStrong}>{total.toLocaleString()}</Text> cards found
+        </Text>
+      ) : null}
 
       {tcg !== "" && (
         <Pressable
@@ -216,28 +216,13 @@ export function CardDatabaseScreen() {
   );
 }
 
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  const C = useColors();
-  const styles = useMemo(() => createStyles(C), [C]);
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-    >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const createStyles = (C: Palette) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.base100 },
   header: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerText: { flex: 1 },
-  title: { fontSize: 20, fontWeight: "700", color: C.baseContent },
-  subtitle: { fontSize: 12, color: C.baseContentMuted, marginTop: 1 },
+  title: { fontSize: T.title, fontWeight: "700", letterSpacing: -0.5, color: C.baseContent },
+  count: { marginHorizontal: GUTTER, marginTop: 12, color: C.baseContentMuted, fontSize: T.body },
+  countStrong: { color: C.baseContent, fontWeight: "700" },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -252,20 +237,7 @@ const createStyles = (C: Palette) => StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: C.baseContent },
   // A horizontal ScrollView shrinks by default, and the list below takes the spare height, which clipped
   // the chips on phones. A fixed height (chip 36 + 2px either side) keeps the row whole.
-  chipScroll: { flexGrow: 0, flexShrink: 0, height: 40, marginTop: 10 },
-  chips: { paddingHorizontal: 16, paddingVertical: 2, gap: 8, alignItems: "center" },
-  chip: {
-    minHeight: 36,
-    paddingHorizontal: 14,
-    justifyContent: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.base200,
-  },
-  chipSelected: { backgroundColor: C.primary, borderColor: C.primary },
-  chipText: { color: C.baseContentMuted, fontSize: 13, fontWeight: "600" },
-  chipTextSelected: { color: C.primaryContent },
+  chipScroll: { flexGrow: 0, flexShrink: 0, marginTop: 12 },
   setButton: {
     flexDirection: "row",
     alignItems: "center",

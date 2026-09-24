@@ -300,13 +300,15 @@ const createStyles = (C: Palette) => StyleSheet.create({
   settingRow: {
     minHeight: 56,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  settingText: { flex: 1 },
+  // Sized by its content, like the web row: a control that does not fit beside the text wraps below it.
+  settingText: { flexShrink: 1 },
   settingTitle: { color: C.baseContent, fontSize: T.body, fontWeight: "600" },
   settingDescription: { marginTop: 2, color: C.baseContentMuted, fontSize: T.meta, lineHeight: 18 },
   value: { color: C.baseContentMuted, fontSize: T.body },

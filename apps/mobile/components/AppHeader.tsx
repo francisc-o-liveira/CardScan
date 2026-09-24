@@ -8,23 +8,26 @@ import { useColors } from "@/providers/ThemeProvider";
 /**
  * Wordmark. The glyph is a card silhouette crossed by a scan line, the same mark as the web Logo.
  */
-function Logo() {
+export function BrandMark() {
   const C = useColors();
   const styles = useMemo(() => createStyles(C), [C]);
 
   return (
-    <Pressable
-      onPress={() => router.navigate("/(tabs)")}
-      accessibilityRole="link"
-      accessibilityLabel="CardScan home"
-      style={styles.logo}
-    >
+    <View style={styles.logo}>
       <View style={styles.mark}>
         <View style={styles.markCard}>
           <View style={styles.markLine} />
         </View>
       </View>
       <Text style={styles.wordmark}>CardScan</Text>
+    </View>
+  );
+}
+
+function Logo() {
+  return (
+    <Pressable onPress={() => router.navigate("/(tabs)")} accessibilityRole="link" accessibilityLabel="CardScan home">
+      <BrandMark />
     </Pressable>
   );
 }

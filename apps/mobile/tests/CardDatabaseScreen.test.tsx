@@ -69,7 +69,7 @@ describe("Card Database screen", () => {
     await renderScreen();
     await screen.findByTestId("card-list");
     expect(lastCall()).toEqual({ tcg: undefined, setId: undefined, query: undefined, limit: 30, page: 1 });
-    expect(screen.getByTestId("card-total")).toHaveTextContent("2 cards");
+    expect(screen.getByTestId("card-total")).toHaveTextContent("2 cards found");
   });
 
   it("renders a placeholder for cards without an image", async () => {
@@ -189,7 +189,7 @@ describe("Card Database screen", () => {
   it("lists every supported game, even those the API has no catalog for yet", async () => {
     // The mocked API only knows Pokémon and Magic; the filter still offers all eight, like the web app.
     await renderScreen();
-    for (const label of ["All TCGs", "Pokémon", "Magic", "Yu-Gi-Oh!", "Lorcana", "One Piece", "Digimon", "Star Wars", "Flesh & Blood"]) {
+    for (const label of ["All games", "Pokémon", "Magic", "Yu-Gi-Oh!", "Lorcana", "One Piece", "Digimon", "Star Wars", "Flesh & Blood"]) {
       expect(await screen.findByLabelText(label)).toBeTruthy();
     }
   });

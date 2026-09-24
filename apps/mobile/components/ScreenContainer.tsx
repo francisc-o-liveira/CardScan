@@ -66,8 +66,8 @@ const createStyles = (C: Palette) => StyleSheet.create({
   flex: { flex: 1 },
   // Bottom padding clears the tab bar.
   scrollContent: { paddingBottom: 96 },
-  headerGap: { height: 20 },
-  header: { paddingHorizontal: GUTTER, paddingTop: S.md, paddingBottom: S.lg },
+  headerGap: { height: 24 },
+  header: { paddingHorizontal: GUTTER, paddingTop: S.xl, paddingBottom: S.lg },
   title: {
     fontSize: T.title,
     fontWeight: "700",

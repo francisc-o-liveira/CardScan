@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { LIVE_TCGS } from "@cardscan/config";
 import { useAuth } from "@/providers/AuthProvider";
 import { PageShell } from "@/components/layout/PageShell";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -8,7 +9,7 @@ import { CardRail } from "@/components/cards/CardRail";
 import { CollectionHero, type CollectionSummary } from "@/components/home/CollectionHero";
 import { QuickActions } from "@/components/home/QuickActions";
 import { GamesGrid } from "@/components/home/GamesGrid";
-import { useLatestSetCards } from "@/hooks/useLatestSetCards";
+import { GameRail } from "@/components/home/GameRail";
 import { useCollectionSummary } from "@/hooks/useCollection";
 import { CAPABILITIES } from "@/lib/features";
 
@@ -18,8 +19,6 @@ const EMPTY_SUMMARY: CollectionSummary = { totalCards: 0, perGame: {} };
 export default function HomePage() {
   const { user } = useAuth();
   const summary = useCollectionSummary();
-  const pokemon = useLatestSetCards("pokemon", 12);
-  const magic = useLatestSetCards("magic", 12);
 
   return (
     <PageShell>
@@ -33,30 +32,15 @@ export default function HomePage() {
           <QuickActions />
         </section>
 
-        {/* Real catalog data, not a placeholder rail — the newest set of each
-            game with an imported catalog. */}
-        <section aria-labelledby="new-pokemon">
-          <SectionHeader
-            title="New in Pokémon"
-            subtitle={pokemon.set?.name ?? "Latest set"}
-            href={pokemon.set ? `/discover?game=pokemon&set=${pokemon.set.id}` : "/discover?game=pokemon"}
-          />
-          <CardRail cards={pokemon.cards} isLoading={pokemon.isLoading} />
-        </section>
-
-        <section aria-labelledby="new-magic">
-          <SectionHeader
-            title="New in Magic"
-            subtitle={magic.set?.name ?? "Latest set"}
-            href={magic.set ? `/discover?game=magic&set=${magic.set.id}` : "/discover?game=magic"}
-          />
-          <CardRail cards={magic.cards} isLoading={magic.isLoading} />
-        </section>
+        {/* Real catalog data: the newest set of every game with an imported catalog. */}
+        {LIVE_TCGS.map((tcg) => (
+          <GameRail key={tcg} tcg={tcg} />
+        ))}
 
         <section aria-labelledby="games">
           <SectionHeader
             title="Your games"
-            subtitle="Pokémon and Magic catalogs are imported and searchable today."
+            subtitle="Every catalog is imported and searchable."
           />
           <div id="games">
             <GamesGrid />
