@@ -16,6 +16,8 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { useCard, useCards } from "@/hooks/useCatalog";
 import { useAddToCollection, useCardInCollection } from "@/hooks/useCollection";
 import { OwnedCopies } from "@/components/OwnedCopies";
+import { MarketPrices, PriceHistory } from "@/components/PriceHistory";
+import { formatPrice } from "@/utils/format";
 import { apiErrorMessage } from "@/utils/apiError";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
@@ -141,6 +143,15 @@ export function CardDetailScreen() {
             {card.collectorNumber ? ` · #${card.collectorNumber}` : ""}
           </Text>
 
+          {card.marketPrice ? (
+            <View style={styles.priceLine}>
+              <Text style={styles.priceValue}>{formatPrice(card.marketPrice.amount, card.marketPrice.currency)}</Text>
+              <Text style={styles.priceCaption}>
+                market price{card.marketPrice.subType ? ` · ${card.marketPrice.subType}` : ""}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Add and Wishlist share a row and Share wraps below, like the web action group. */}
           <View style={styles.actions}>
             <View style={styles.actionsRow}>
@@ -188,9 +199,10 @@ export function CardDetailScreen() {
                   : "English"
               }
             />
-            {/* Future / Requires Backend Support: the Price table exists but no pricing source is wired up. */}
-            <DetailRow icon="cash-outline" label="Market value" value="Not tracked yet" />
           </View>
+
+          <MarketPrices prices={card.prices} />
+          <PriceHistory cardId={card.id} prices={card.prices} />
 
           {(related.isLoading || relatedCards.length > 0) && (
             <View style={styles.related}>
@@ -241,6 +253,9 @@ const createStyles = (C: Palette) => StyleSheet.create({
   noImageText: { color: C.baseContentFaint, fontSize: T.meta },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: S.xl },
   name: { marginTop: 12, color: C.baseContent, fontSize: T.title, fontWeight: "700", letterSpacing: -0.5 },
+  priceLine: { marginTop: 16, flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: 8 },
+  priceValue: { color: C.baseContent, fontSize: T.title, fontWeight: "700", letterSpacing: -0.5 },
+  priceCaption: { color: C.baseContentMuted, fontSize: T.meta },
   subtitle: { marginTop: 6, color: C.baseContentMuted, fontSize: T.body },
   setLink: { color: C.baseContent, fontWeight: "600", textDecorationLine: "underline" },
   actions: { marginTop: S.xl, gap: 10 },

@@ -1,9 +1,12 @@
 import type {
   ApiResponse,
+  CardPrice,
+  CardPriceHistory,
   CatalogCard,
   CatalogSet,
   CatalogTcg,
   PaginatedResponse,
+  PriceHistoryRange,
   TcgSlug,
 } from "@cardscan/types";
 import { apiClient } from "@/lib/api-client";
@@ -23,6 +26,7 @@ export interface CatalogCardDetail extends CatalogCard {
   set: CatalogSet;
   tcg: CatalogTcg;
   variants: CatalogCardVariant[];
+  prices: CardPrice[];
 }
 
 export interface CatalogSetDetail extends CatalogSet {
@@ -60,6 +64,12 @@ export const catalogApi = {
   },
   getCard: async (id: string): Promise<CatalogCardDetail> => {
     const { data } = await apiClient.get<ApiResponse<CatalogCardDetail>>(`/cards/${id}`);
+    return unwrap(data);
+  },
+  getPriceHistory: async (id: string, range: PriceHistoryRange): Promise<CardPriceHistory> => {
+    const { data } = await apiClient.get<ApiResponse<CardPriceHistory>>(`/cards/${id}/price-history`, {
+      params: { range },
+    });
     return unwrap(data);
   },
   listCards: async (params: ListCardsParams): Promise<PaginatedResponse<CatalogCard>> => {

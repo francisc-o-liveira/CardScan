@@ -12,3 +12,5 @@ allowBuilds:
   # and protobufjs only prints version warnings.
   onnxruntime-node: false
   protobufjs: false
+  # its install script only prints a funding message.
+  tesseract.js: false

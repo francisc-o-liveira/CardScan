@@ -1,8 +1,23 @@
 import { useMemo } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import type { TcgSlug } from "@cardscan/types";
+import type { PriceHistoryRange, TcgSlug } from "@cardscan/types";
 import { api } from "@/services/api";
 import type { ListCardsParams } from "@/services/catalog";
+
+/** Smallest set worth showcasing as "new": skips one-card promos. */
+const MIN_SET_CARDS = 30;
+/** The API's max page size. */
+const MAX_PAGE = 100;
+
+/**
+ * Picks `count` items spread evenly across `items`. Cards come sorted by name, so the first N are runs of
+ * near-duplicates; sampling across the set gives a rail with variety. Same as the web app.
+ */
+function spread<T>(items: T[], count: number): T[] {
+  if (items.length <= count) return items;
+  const step = items.length / count;
+  return Array.from({ length: count }, (_, i) => items[Math.floor(i * step)]!);
+}
 
 const CATALOG_STALE_TIME = 10 * 60 * 1000;
 
@@ -41,6 +56,17 @@ export function useCard(id: string | undefined) {
   });
 }
 
+/** Prices change once a day, so the history is cached like the rest of the catalog. */
+export function usePriceHistory(id: string | undefined, range: PriceHistoryRange) {
+  return useQuery({
+    queryKey: ["catalog", "card", id ?? "", "price-history", range],
+    queryFn: () => api.catalog.getPriceHistory(id!, range),
+    staleTime: CATALOG_STALE_TIME,
+    placeholderData: keepPreviousData,
+    enabled: Boolean(id),
+  });
+}
+
 export function useCards(params: ListCardsParams, enabled = true) {
   return useQuery({
     queryKey: ["catalog", "cards", params],
@@ -73,14 +99,20 @@ export function useLatestSetCards(tcg: TcgSlug, limit = 10) {
   const latestSet = useMemo(() => {
     const sets = setsQuery.data;
     if (!sets?.length) return undefined;
-    return sets.find((set) => (set.totalCards ?? 0) > 0) ?? sets[0];
+    // Prefer a real set over a one-card promo; fall back to any set with cards.
+    return (
+      sets.find((set) => (set.totalCards ?? 0) >= MIN_SET_CARDS) ??
+      sets.find((set) => (set.totalCards ?? 0) > 0) ??
+      sets[0]
+    );
   }, [setsQuery.data]);
 
-  const cardsQuery = useCards({ tcg, setId: latestSet?.id, limit }, Boolean(latestSet?.id));
+  const cardsQuery = useCards({ tcg, setId: latestSet?.id, limit: MAX_PAGE }, Boolean(latestSet?.id));
+  const cards = useMemo(() => spread(cardsQuery.data?.data ?? [], limit), [cardsQuery.data, limit]);
 
   return {
     set: latestSet,
-    cards: cardsQuery.data?.data ?? [],
+    cards,
     isLoading: setsQuery.isLoading || (Boolean(latestSet) && cardsQuery.isLoading),
   };
 }

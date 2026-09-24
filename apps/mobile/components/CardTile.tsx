@@ -5,6 +5,7 @@ import { resolveImageUrl } from "@/utils/imageUrl";
 import { useImageRetry } from "@/hooks/useImageRetry";
 import { R, T, CARD_ASPECT, type Palette } from "@/theme";
 import { useColors } from "@/providers/ThemeProvider";
+import { formatPrice } from "@/utils/format";
 
 /**
  * Only the fields the tile draws. Declaring them structurally lets it take a
@@ -16,6 +17,7 @@ export interface CardTileCard {
   rarity: string | null;
   imageUrl: string | null;
   set?: { name: string } | null;
+  marketPrice?: { amount: number; currency: string } | null;
 }
 
 interface CardTileProps {
@@ -46,6 +48,7 @@ function CardTileComponent({
   const { attempt, failed: imageFailed, onError: onImageError } = useImageRetry(uri);
   const showImage = Boolean(uri) && !imageFailed;
   const setName = card.set?.name ?? "Unknown set";
+  const price = card.marketPrice ? formatPrice(card.marketPrice.amount, card.marketPrice.currency) : null;
 
   return (
     <Pressable
@@ -93,10 +96,13 @@ function CardTileComponent({
       <Text style={styles.name} numberOfLines={1}>
         {card.name}
       </Text>
-      {showSet && (
-        <Text style={styles.meta} numberOfLines={1}>
-          {setName} {"\u00B7"} {card.collectorNumber}
-        </Text>
+      {(showSet || card.collectorNumber || price) && (
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {showSet ? `${setName} \u00B7 ${card.collectorNumber}` : card.collectorNumber}
+          </Text>
+          {price ? <Text style={styles.price}>{price}</Text> : null}
+        </View>
       )}
       {showRarity && card.rarity ? (
         <Text style={styles.rarity} numberOfLines={1}>
@@ -125,13 +131,19 @@ const createStyles = (C: Palette) => StyleSheet.create({
     position: "absolute",
     top: 6,
     right: 6,
-    backgroundColor: C.primary,
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    backgroundColor: C.success,
+    borderRadius: 999,
+    minWidth: 24,
+    minHeight: 24,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  badgeText: { color: C.primaryContent, fontSize: 11, fontWeight: "700" },
+  badgeText: { color: C.base100, fontSize: 11, fontWeight: "700" },
   name: { marginTop: 8, color: C.baseContent, fontSize: T.meta, fontWeight: "600" },
-  meta: { marginTop: 2, color: C.baseContentFaint, fontSize: 12 },
+  metaRow: { marginTop: 2, flexDirection: "row", alignItems: "baseline", gap: 6 },
+  flex: { flex: 1 },
+  meta: { flex: 1, color: C.baseContentFaint, fontSize: 12 },
+  price: { color: C.baseContent, fontSize: 12, fontWeight: "700" },
   rarity: { marginTop: 1, color: C.baseContentFaint, fontSize: 10, textTransform: "capitalize", opacity: 0.8 },
 });

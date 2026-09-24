@@ -34,6 +34,27 @@ const envSchema = z.object({
   /** Card recognition data: the downloaded model and the visual index of the catalog. */
   RECOGNITION_DIR: z.string().min(1).default(path.resolve(__dirname, "../../storage/recognition")),
   /** Where the recognition model runs. "auto" uses the GPU through DirectML on Windows, else the CPU. */
+  /** TCGplayer's own price history, fetched when a card's chart is opened. Off in tests. */
+  TCGPLAYER_HISTORY: z
+    .enum(["true", "false"])
+    .default(process.env.NODE_ENV === "test" ? "false" : "true")
+    .transform((value) => value === "true"),
+  TCGPLAYER_HISTORY_URL: z.string().min(1).default("https://infinite-api.tcgplayer.com"),
+  /**
+   * Read the number printed on the card to tell reprints apart (OCR). Off until it has been checked on real
+   * phone photos: the simulated ones are too small to carry legible print, and it adds ~1.4s to a scan.
+   */
+  RECOGNITION_READ_PRINT: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  /** Keep catalogs and prices up to date in the background. On by default only while developing. */
+  AUTO_SYNC: z
+    .enum(["true", "false"])
+    .default(process.env.NODE_ENV === "development" || !process.env.NODE_ENV ? "true" : "false")
+    .transform((value) => value === "true"),
+  AUTO_SYNC_CATALOG_HOURS: z.coerce.number().positive().default(24),
+  AUTO_SYNC_PRICES_HOURS: z.coerce.number().positive().default(24),
   RECOGNITION_DEVICE: z.enum(["auto", "cpu", "dml"]).default("auto"),
 });
 

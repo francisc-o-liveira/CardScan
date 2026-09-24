@@ -9,6 +9,7 @@ import type { CardQueryInput } from "@cardscan/validation";
 import { prisma } from "../config/prisma";
 import { Errors } from "../utils/AppError";
 import { PRICE_SOURCE } from "./priceSyncService";
+import { backfillFromTcgplayer } from "./tcgplayerHistoryService";
 
 export const listTcgs = () => prisma.tcg.findMany({ orderBy: { name: "asc" } });
 
@@ -132,6 +133,8 @@ export const getCardPriceHistory = async (
   if (!card) {
     throw Errors.notFound("Card not found");
   }
+
+  await backfillFromTcgplayer(id, range);
 
   const since = new Date();
   since.setUTCMonth(since.getUTCMonth() - RANGE_MONTHS[range]);
