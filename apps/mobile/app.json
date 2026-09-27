@@ -60,5 +60,8 @@
       }
     },
     "owner": "mns28"
+  },
+  "react-native-google-mobile-ads": {
+    "android_sdk": "classic"
   }
 }
